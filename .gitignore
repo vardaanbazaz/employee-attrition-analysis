@@ -53,3 +53,8 @@ Thumbs.db
 # Tableau temp files
 *.twb.git
 *.twb
+
+# Model artifacts
+models/*.pkl
+models/*.sav
+
