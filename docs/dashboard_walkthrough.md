@@ -5,7 +5,7 @@ This guide provides a detailed walkthrough of the Power BI and Tableau dashboard
 ---
 
 ## Dashboard Screenshots & Views
-If you do not have Power BI Desktop or Tableau Reader installed, you can review the high-resolution screenshots saved in the repository under [dashboard/screenshots/](file:///home/shuhul/Employee-Attrition-and-Churn-Analysis-main/dashboard/screenshots).
+If you do not have Power BI Desktop or Tableau Reader installed, you can review the high-resolution screenshots saved in the repository under [dashboard/screenshots/](../dashboard/screenshots/).
 
 ### 1. Dashboard Overview
 * **File Reference**: `dashboard-overview.jpg`
