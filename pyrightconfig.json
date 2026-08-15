@@ -1,9 +1,5 @@
 {
-  "venvPath": ".",
-  "venv": ".venv",
-  "extraPaths": [
-    "src"
-  ],
-  "pythonVersion": "3.14",
-  "typeCheckingMode": "basic"
+    "venvPath": ".",
+    "venv": ".venv",
+    "extraPaths": ["src"]
 }
