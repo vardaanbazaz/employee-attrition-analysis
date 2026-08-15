@@ -1,212 +1,179 @@
-# Employee Attrition Analysis & Predictive Modeling
+# Enterprise Employee Attrition: ML Prediction & Diagnostic Pipeline
 
-[![Project Status: Active](https://img.shields.io/badge/Project%20Status-Active-brightgreen.svg)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](#)
-[![SQL: MySQL 8.0](https://img.shields.io/badge/SQL-MySQL%208.0-orange.svg)](#)
-[![Machine Learning: Scikit--Learn / XGBoost](https://img.shields.io/badge/ML-Scikit--Learn%20%7C%20XGBoost-orange.svg)](#)
-[![BI Tools: PowerBI & Tableau](https://img.shields.io/badge/BI%20Tools-Power%20BI%20%7C%20Tableau-764ABC.svg)](#)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?style=for-the-badge&logo=python&logoColor=white)
+![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
+![XGBoost](https://img.shields.io/badge/XGBoost-111111?style=for-the-badge&logo=xgboost&logoColor=white)
+![SHAP](https://img.shields.io/badge/SHAP-Explainable%20AI-4B0082?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
 
-> **Series-A Production-Grade Data Science, Exploratory Data Analysis (EDA) & Predictive Modeling Solution** for enterprise human capital management. Combines a normalized MySQL database schema, high-performance diagnostic SQL analytics, machine learning classifiers (Random Forest & XGBoost with SMOTE oversampling), and interactive executive dashboards (Power BI & Tableau) to diagnose, quantify, and predict employee flight risk.
-
----
-
-## 💡 Executive Summary
-
-Unplanned employee turnover represents one of the largest hidden operational and financial drains on modern enterprise organizations. Research demonstrates that replacing a departed employee costs between **1.5x to 2.0x their annual base salary** when accounting for recruitment advertising, interviewing cycles, onboarding overhead, temporary productivity gaps, and institutional knowledge loss.
-
-This **Employee Attrition Analysis & Predictive Analytics Platform** transforms fragmented, multi-source HR telemetry into an end-to-end data science and decision-support pipeline:
-
-* **Quantifying Attrition Triggers**: Isolate high-vulnerability cohorts experiencing elevated churn due to workload intensity, compensation stagnation, or lack of promotion velocity.
-* **Predictive Churn Risk Scoring**: Leverage supervised machine learning algorithms trained on balanced employee profiles (via SMOTE) to predict flight risk before resignation notices occur.
-* **Data-Driven Executive Action**: Supply HR leadership and department executives with empirical recommendations to optimize pay structures, enforce overtime thresholds, and redesign onboarding milestones.
+An enterprise-grade, end-to-end Machine Learning and Diagnostic Analytics platform designed to proactively identify employee flight risk, quantify compensation & workload friction points, and provide model transparency using **SHAP (SHapley Additive exPlanations)**.
 
 ---
 
-## 🛠️ Step 1: Data Engineering & Relational Database Schema
+## 📌 Executive Summary
 
-The foundational layer of the analytical pipeline ingests raw tabular datasets (`HR_1.xlsx` demographics/satisfaction metrics and `HR_2.xlsx` compensation/tenure stats) into a normalized **MySQL 8.0** relational database.
+Employee turnover costs enterprises millions annually in lost productivity, onboarding overhead, and institutional knowledge drain. Traditional HR approaches rely on retrospective exit surveys after an employee has already resigned.
 
-![Technical Architecture](assets/architecture.png)
+This platform transitions workforce management from reactive tracking to **predictive intelligence**. Built as a modular Python ML engine, it ingests multi-source HR telemetry (demographics, compensation, performance, tenure), resolves class imbalance using **SMOTE**, trains gradient-boosted decision tree models (**XGBoost** & **Random Forest**), and decodes model decisions down to individual feature attributions via **SHAP**.
 
-### Database Pipeline & Relational DDL
-* **Schema Design**: Implemented in [`sql/schema.sql`](sql/schema.sql), splitting 50,000 synthetic employee records into two normalized entities:
-  * `hr_1`: Captures demographics (`Age`, `Gender`, `MaritalStatus`, `Department`, `JobRole`) and 1–4 ordinal satisfaction scores (`EnvironmentSatisfaction`, `JobSatisfaction`, `JobInvolvement`).
-  * `hr_2`: Captures compensation (`MonthlyIncome`, `PercentSalaryHike`), workload (`OverTime`), and tenure metrics (`YearsAtCompany`, `YearsInCurrentRole`, `YearsSinceLastPromotion`, `YearsWithCurrManager`).
-* **Referential Integrity**: Linked via `FOREIGN KEY (EmployeeID) REFERENCES hr_1(EmployeeNumber) ON DELETE CASCADE` to guarantee data consistency across joins.
+### Key Business Metrics & Machine Learning Pipeline Wins
+* **Dataset Scale**: Processed and merged **50,000 employee records** across 36 tabular features.
+* **Class Imbalance Resolution**: Applied SMOTE oversampling to achieve a balanced **35,148 training set** (`50% / 50%` target split).
+* **Predictive Performance**: Evaluated classification metrics (Accuracy, Precision, Recall, F1, ROC-AUC) across Logistic Regression baselines, Random Forest, and XGBoost classifiers.
+* **Explainability Coverage**: Integrated 100% SHAP feature attribution mapping, translating black-box ML outputs into actionable retention levers for HR leadership.
 
 ---
 
-## 🔍 Step 2: Diagnostic SQL Analytics
+## 🏗️ Pipeline Architecture & Modular System Design (`src/`)
 
-The core analytical queries stored in [`sql/employee_attrition_analysis.sql`](sql/employee_attrition_analysis.sql) aggregate metrics across demographic, financial, and operational dimensions.
+The core repository architecture decouples the machine learning workflow into a modular, production-ready Python pipeline located in [`src/`](src/):
 
-### Query A: Attrition Rate by Monthly Income Bracket
-*Categorizes employees into logical salary tiers to identify income-driven turnover thresholds:*
-
-```sql
-SELECT 
-    CASE 
-        WHEN t2.monthlyincome < 3000 THEN 'Under $3k'
-        WHEN t2.monthlyincome BETWEEN 3000 AND 6000 THEN '$3k - $6k'
-        WHEN t2.monthlyincome BETWEEN 6001 AND 10000 THEN '$6k - $10k'
-        WHEN t2.monthlyincome BETWEEN 10001 AND 15000 THEN '$10k - $15k'
-        ELSE 'Over $15k'
-    END AS income_bracket,
-    COUNT(*) AS total_employees,
-    SUM(CASE WHEN t1.attrition = 'Yes' THEN 1 ELSE 0 END) AS attrition_count,
-    ROUND(SUM(CASE WHEN t1.attrition = 'Yes' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS attrition_rate_pct
-FROM hr_1 t1
-JOIN hr_2 t2 ON t1.employeenumber = t2.employeeid
-GROUP BY income_bracket
-ORDER BY MIN(t2.monthlyincome) ASC;
+```
+src/
+├── data_ingestion.py      # Multi-source data ingestion, schema validation, & relational joins
+├── preprocessing.py       # Feature encoding, StandardScaler, & SMOTE class balancing
+├── train.py               # Classifier training (XGBoost, Random Forest, Logistic Regression) & pickle serialization
+└── evaluate.py            # Diagnostic evaluation reporting & SHAP explainability plot generation
 ```
 
-### Query B: Burnout Risk Cohort Analysis
-*Evaluates the compounding risk of excessive workload (Overtime) combined with low compensation raises (<15%):*
+### 1. Data Ingestion ([`src/data_ingestion.py`](src/data_ingestion.py))
+* **Primary Key Relational Join**: Automates the joining of tabular demographics (`data/raw/HR_1.xlsx`) and compensation/performance metrics (`data/raw/HR_2.xlsx`) on `EmployeeNumber` ↔ `Employee ID`.
+* **Data Hygiene**: Cleans trailing unformatted Excel columns and validates column schemas prior to downstream processing.
 
-```sql
-SELECT 
-    t2.overtime,
-    CASE 
-        WHEN t2.percentsalaryhike < 15 THEN 'Low Hike (<15%)' 
-        ELSE 'Normal/High Hike (15%+)' 
-    END AS hike_status,
-    COUNT(*) AS total_employees,
-    SUM(CASE WHEN t1.attrition = 'Yes' THEN 1 ELSE 0 END) AS attrition_count,
-    ROUND(SUM(CASE WHEN t1.attrition = 'Yes' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS attrition_rate_pct
-FROM hr_1 t1
-JOIN hr_2 t2 ON t1.employeenumber = t2.employeeid
-GROUP BY t2.overtime, hike_status
-ORDER BY attrition_rate_pct DESC;
+### 2. Preprocessing & Imbalance Handling ([`src/preprocessing.py`](src/preprocessing.py))
+* **Feature Encoding**: Converts categorical string columns (`Department`, `JobRole`, `OverTime`, `BusinessTravel`, etc.) into model-ready integers using `LabelEncoder`.
+* **Feature Standardization**: Applies `StandardScaler` to ensure zero mean and unit variance across continuous numerical inputs (`MonthlyIncome`, `Age`, `YearsAtCompany`).
+* **SMOTE Oversampling**: Leverages `imbalanced-learn`'s Synthetic Minority Over-sampling Technique (SMOTE) on the training set to prevent model bias towards majority retained classes.
+
+### 3. Model Training & Serialization ([`src/train.py`](src/train.py))
+* **Classifier Suites**: Supports baseline Logistic Regression, Random Forest, and XGBoost hyperparameterized classifiers.
+* **Artifact Serialization**: Automatically exports fitted model binaries (`.pkl`) to `models/` for downstream inference services.
+
+### 4. Evaluation & Diagnostic Diagnostics ([`src/evaluate.py`](src/evaluate.py))
+* **Metric Reporting**: Computes Precision, Recall, F1-Score, ROC-AUC, and Confusion Matrices on unseen test datasets (`15,000 records`).
+* **SHAP Integration**: Automatically triggers SHAP value calculation and summary plot generation.
+
+---
+
+## 📊 Exploratory Data Analysis (EDA) & Dark-Mode Analytics
+
+Custom dark-mode visual telemetry generated programmatically using `pandas`, `matplotlib`, and `seaborn` ([`scripts/generate_visuals.py`](scripts/generate_visuals.py)):
+
+### 1. Departmental Attrition Diagnostics
+![Departmental Attrition Rate](assets/attrition_by_department.png)
+* **Insight**: Quantifies percentage turnover and exit counts across departments. Highlights elevated attrition in high-strain units like Research & Development and Software Engineering.
+
+---
+
+### 2. Compensation Density & Flight Risk Analysis
+![Compensation Density vs Attrition Risk](assets/compensation_vs_attrition.png)
+* **Insight**: Kernel Density Estimation (KDE) plot comparing income distributions of retained vs. departed staff. Attrition is heavily concentrated among staff earning under **$3,000/month**.
+
+---
+
+### 3. Numerical Telemetry Correlation Matrix
+![Numerical Telemetry Correlation Matrix](assets/correlation_heatmap.png)
+* **Insight**: Multi-variable correlation heatmap isolating strong interactions between age, total working years, monthly income, salary hike percentage, and flight risk probability.
+
+---
+
+## 🧠 Machine Learning Explainability (SHAP)
+
+To transition from "black-box" predictions to actionable business intelligence, the pipeline leverages **SHAP (SHapley Additive exPlanations)** based on cooperative game theory.
+
+![SHAP Feature Importance Summary Plot](assets/shap_summary.png)
+
+### Demystifying the "Black Box": Flight Risk Attribution
+The SHAP Summary Plot maps both the **magnitude** and **direction** of feature influences on the XGBoost classifier's flight risk predictions:
+
+1. **OverTime (Primary Risk Driver)**:
+   - High overtime frequency (red dots extending to the right) exerts the strongest positive push on SHAP values, significantly elevating predicted flight risk.
+2. **Monthly Income & Daily Rates**:
+   - Low monthly income (`MonthlyIncome`) and low daily rates (`DailyRate`) push SHAP scores into the positive churn domain, proving that under-compensated employees face higher flight risk.
+3. **Tenure & Manager Stability**:
+   - Brief tenure (`YearsAtCompany`) and short relationships with current managers (`YearsWithCurrManager`) combined with long commutes (`DistanceFromHome`) strongly amplify churn probability.
+
+By evaluating these individual Shapley attributions, HR leaders can understand *why* an employee is flagged as high-risk and implement targeted retention interventions (e.g., overtime caps or salary benchmarking) before an exit occurs.
+
+---
+
+## 💻 Setup & Installation Guide
+
+### Prerequisites
+* Python 3.10+
+* Virtual Environment (`venv` or `conda`)
+
+### 1. Clone & Set Up Environment
+```bash
+# Clone repository
+git clone https://github.com/your-username/employee-attrition-analysis.git
+cd employee-attrition-analysis
+
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Execute Modular ML Pipeline
+```bash
+# Run model training workflow
+python src/train.py
+
+# Run full evaluation, metric diagnostics, and SHAP plot generation
+python src/evaluate.py
+```
+
+### 3. Generate Analytics Visuals
+```bash
+# Programmatically regenerate dark-mode EDA plots in assets/
+python scripts/generate_visuals.py
 ```
 
 ---
 
-## 🤖 Step 3: Predictive Machine Learning Pipeline
-
-Beyond descriptive SQL diagnostics, this platform incorporates an end-to-end Machine Learning pipeline implemented in [`notebooks/employee_churn_prediction.ipynb`](notebooks/employee_churn_prediction.ipynb).
-
-### Pipeline Workflow
-1. **Exploratory Data Analysis (EDA)**: Analyzes univariate distribution features and multivariate correlations across employee attributes.
-2. **Preprocessing & Encoding**: Performs one-hot encoding on categorical variables (`BusinessTravel`, `Department`, `JobRole`, `MaritalStatus`) and standardizes continuous numerical attributes.
-3. **Addressing Class Imbalance (SMOTE)**: Employee attrition data exhibits severe class imbalance (majority of employees stay). We apply **Synthetic Minority Over-sampling Technique (SMOTE)** to synthesize minority class samples and prevent model bias toward majority classes.
-4. **Model Training & Benchmarking**: Evaluates multiple supervised classifiers:
-   * **Logistic Regression**: Serves as a baseline interpretable linear classifier.
-   * **Random Forest Classifier**: Captures non-linear feature interactions and tree-based feature importance.
-   * **XGBoost Classifier**: Delivers peak predictive accuracy, high ROC-AUC, and fine-tuned precision/recall tradeoffs for candidate flight risk.
-5. **Churn Probability Generation**: Exports binary classification models capable of outputting probability scores (`0.0 - 1.0`) for proactive HR retention interventions.
-
----
-
-## 📊 Step 4: Business Intelligence Dashboards
-
-The visual analytics layer features a 4-view dashboard gallery served via **Power BI** (`dashboard/powerbi/employee_attrition_dashboard.pbix`) and **Tableau** (`dashboard/tableau/employee_attrition_dashboard.twbx`).
-
-### 1. Executive Overview Dashboard
-![Executive Overview Dashboard](dashboard/screenshots/dashboard-overview.jpg)
-* **Description**: Primary landing view displaying macro KPI indicators (Total Headcount, Attrition Count, Active Count, Attrition Rate %) alongside high-level departmental exit distributions.
-
----
-
-### 2. Departmental & Role Diagnostics
-![Departmental Diagnostics](dashboard/screenshots/department-analysis.jpg)
-* **Description**: Granular breakdown isolating high-risk job titles (*Sales Executives*, *Lab Technicians*, *Research Scientists*) and comparing average organizational tenure across departments.
-
----
-
-### 3. Attrition Drivers & Compensation Heatmaps
-![Attrition Drivers](dashboard/screenshots/attrition-drivers.jpg)
-* **Description**: Visualizes multivariate drivers of attrition, illustrating the impact of overtime hours, salary bracket distribution, and work-life balance scores.
-
----
-
-### 4. Employee Demographics & Workforce Profile
-![Employee Overview](dashboard/screenshots/employee-overview.jpg)
-* **Description**: Explores demographic attributes including age distributions, business travel frequency, education fields, and marital status correlations.
-
----
-
-## 📈 Step 5: Key Business Insights & Strategic Recommendations
-
-Extracted directly from comprehensive analytical reports ([`docs/insights.md`](docs/insights.md)):
-
-### Strategic Findings
-1. **Overtime Burnout**: Employees working overtime depart at **more than double the rate** of non-overtime staff. Overtime employees receiving `<15%` salary hikes experience over **60% attrition**.
-2. **Compensation Ceiling**: Attrition is heavily concentrated among staff earning **under $3,000 per month**. Salary raises below 15% fail to function as effective retention drivers.
-3. **Role Volatility**: Three specific roles (*Sales Executives*, *Laboratory Technicians*, and *Research Scientists*) account for **over 50% of all company exits**.
-4. **Early-Tenure Vulnerability**: Employees in their first **0–24 months** show peak attrition, signaling critical gaps in initial onboarding and early career growth alignment.
-
-### Strategic Recommendations
-* 🛡️ **Enforce Workload Caps**: Mandate departmental overtime limits and require automated HR check-ins whenever an employee exceeds 10 overtime hours per week.
-* 💵 **Market-Rate Pay Adjustments**: Conduct compensation benchmarks for low-earning roles and ensure high performers receive a minimum 15% annual salary hike.
-* 🎯 **Structured Tenure Milestones**: Implement formal 12-month and 24-month career trajectory planning to give mid-tenure employees visible growth pathways.
-
----
-
-## 📁 Repository Architecture
+## 📁 Repository Structure
 
 ```
 employee-attrition-analysis/
 │
-├── README.md                          # Single source of truth documentation
+├── README.md                          # Master project documentation
+├── requirements.txt                   # Production Python dependencies manifest
+├── pyrightconfig.json                 # Language server environment configuration
 ├── LICENSE                            # MIT License
 ├── .gitignore                         # Version control exclusions
 │
+├── src/                               # Modular Machine Learning Pipeline
+│   ├── data_ingestion.py              # Ingests & relationally merges raw Excel files
+│   ├── preprocessing.py               # Label encoding, scaling, & SMOTE oversampling
+│   ├── train.py                       # Fits XGBoost, Random Forest, & Logistic Regression
+│   └── evaluate.py                    # Metric diagnostics & SHAP explainability plot generator
+│
+├── scripts/
+│   └── generate_visuals.py            # Programmatic dark-mode analytics plot generator
+│
 ├── assets/
-│   └── architecture.png               # High-resolution ETL & machine learning architecture diagram
+│   ├── shap_summary.png               # SHAP feature importance & flight risk summary plot
+│   ├── attrition_by_department.png    # Dark-mode departmental attrition rate bar chart
+│   ├── compensation_vs_attrition.png  # Dark-mode compensation KDE density plot
+│   └── correlation_heatmap.png        # Dark-mode numerical feature correlation matrix
 │
 ├── sql/
-│   ├── schema.sql                     # DDL scripts for normalized MySQL schema
-│   └── employee_attrition_analysis.sql # Diagnostic SQL analytical suite
+│   ├── schema.sql                     # DDL scripts for normalized MySQL database
+│   └── employee_attrition_analysis.sql # Diagnostic SQL query suite
 │
 ├── data/
-│   ├── raw/
-│   │   ├── HR_1.xlsx                 # Primary demographics & satisfaction metrics
-│   │   └── HR_2.xlsx                 # Primary compensation & tenure metrics
-│   └── optional/
-│       └── churn_prediction_dataset/ # Supplementary dataset for predictive ML models
+│   └── raw/
+│       ├── HR_1.xlsx                  # Demographics & satisfaction dataset
+│       └── HR_2.xlsx                  # Compensation & tenure dataset
 │
-├── dashboard/
-│   ├── powerbi/
-│   │   └── employee_attrition_dashboard.pbix   # Power BI workbook
-│   ├── tableau/
-│   │   └── employee_attrition_dashboard.twbx   # Tableau packaged workbook
-│   └── screenshots/
-│       ├── dashboard-overview.jpg     # Executive KPI & macro overview view
-│       ├── department-analysis.jpg    # Department & role deep-dive view
-│       ├── attrition-drivers.jpg      # Overtime & compensation heatmap view
-│       └── employee-overview.jpg      # Demographics & workforce profile view
+├── models/                            # Serialized model binaries (.pkl)
+│   └── xgboost_model.pkl
 │
-├── notebooks/
-│   └── employee_churn_prediction.ipynb # EDA, SMOTE oversampling, & predictive ML pipeline
-│
-└── docs/
-    ├── business_problem.md            # Financial cost & business context documentation
-    ├── methodology.md                 # Technical ETL, SQL design, & ML methodology
-    ├── insights.md                    # Detailed strategic findings & recommendations
-    └── dashboard_walkthrough.md       # Interactive dashboard usage guide
-```
-
----
-
-## 🚀 Quick Start Guide
-
-### 1. Database Setup
-```bash
-# Clone the repository
-git clone https://github.com/your-username/employee-attrition-analysis.git
-cd employee-attrition-analysis
-
-# Import relational schema and diagnostic queries into MySQL
-mysql -u root -p < sql/schema.sql
-mysql -u root -p < sql/employee_attrition_analysis.sql
-```
-
-### 2. Machine Learning Execution
-```bash
-# Launch Jupyter Notebook to train models and run EDA
-jupyter notebook notebooks/employee_churn_prediction.ipynb
+└── notebooks/
+    └── employee_churn_prediction.ipynb # Interactive EDA & prototyping notebook
 ```
 
 ---
