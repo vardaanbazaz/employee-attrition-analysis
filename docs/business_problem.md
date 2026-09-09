@@ -1,9 +1,9 @@
 # Business Problem: Employee Attrition & Retention
 
 ## Executive Summary
-Employee attrition refers to the naturally occurring reduction of an organization's workforce when employees leave, retire, or resign and are not immediately replaced. High rates of employee attrition pose a severe threat to organization stability, resulting in rising costs, loss of institutional knowledge, and decreased team morale. 
+Employee attrition refers to the naturally occurring reduction of an organization's workforce when employees leave, retire, or resign and are not immediately replaced. High rates of employee attrition pose a severe threat to organization stability, resulting in rising costs, loss of institutional knowledge, and decreased team morale.
 
-This project aims to diagnose the key drivers of employee turnover within the organization using historical HR datasets. By leveraging relational database queries (SQL) and interactive business intelligence tools (Power BI and Tableau), this project establishes a dashboard that visualizes retention risk factors and empowers HR leaders to take data-driven, preventive measures.
+This project treats attrition as a predictive intelligence problem rather than a retrospective reporting one. It uses a modular Python machine learning pipeline to ingest historical HR records, model employee flight risk with gradient-boosted classifiers (XGBoost, Random Forest), and decode individual predictions with **SHAP (SHapley Additive exPlanations)** — moving HR teams from reactive exit surveys toward proactive, targeted retention interventions.
 
 ---
 
@@ -18,16 +18,16 @@ These costs are divided into:
 ---
 
 ## Core Project Objectives
-To address these challenges, this analytics project seeks to answer several critical business questions:
-1. **What is the organization's baseline attrition rate?** How does it compare across departments, job roles, and educational backgrounds?
-2. **What are the primary compensation-related attrition drivers?** Are employees leaving due to low monthly salaries, stagnant promotion schedules, or insufficient annual raises?
-3. **How do working conditions and workplace culture affect retention?** Is there a quantifiable relationship between employee attrition and self-reported job satisfaction, work-life balance, or overtime hours?
-4. **Who are the high-risk employee segments?** Can we identify specific cohorts (e.g., new joiners working overtime with low hikes) that are highly likely to resign?
+To address these challenges, this project seeks to answer several critical business questions:
+1. **What is the organization's baseline attrition rate?** How does it vary across departments and job roles?
+2. **What are the primary compensation-related attrition drivers?** Are employees leaving due to low monthly income or low daily rates?
+3. **How do working conditions affect retention?** Is there a quantifiable relationship between overtime work, tenure, manager stability, and flight risk?
+4. **Who are the high-risk employees?** Can individual employees be flagged for flight risk before they resign, with a transparent explanation of why?
 
 ---
 
 ## Business Scope
 The scope of this project is focused on:
-* **Descriptive Analytics**: Synthesizing historical records of active and departed employees to determine *what happened*.
-* **Diagnostic Analytics**: Using correlation analysis to establish *why it happened* (e.g., identifying that employees who work overtime leave at twice the rate of those who do not).
-* **Actionable Reporting**: Designing functional, filterable dashboards that HR Business Partners (HRBPs) can use to monitor risk factors in real-time.
+* **Descriptive Analytics**: Exploratory data analysis (EDA) over historical employee records to determine *what happened* — attrition rates by department and compensation bracket.
+* **Diagnostic Analytics**: Using SHAP feature attribution to establish *why it happened* — for example, quantifying how overtime, low compensation, and short tenure push individual predictions toward higher flight risk.
+* **Predictive Intelligence**: Training classification models (Logistic Regression, Random Forest, XGBoost) that flag at-risk employees ahead of resignation, giving HR leadership an individual-level, explainable intervention window.

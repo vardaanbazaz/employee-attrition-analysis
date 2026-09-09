@@ -7,7 +7,7 @@ Handles reading, validating, and merging raw HR telemetry datasets
 """
 
 import os
-from typing import Tuple, Optional
+from typing import Tuple
 import pandas as pd
 
 

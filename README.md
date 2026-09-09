@@ -106,7 +106,7 @@ By evaluating these individual Shapley attributions, HR leaders can understand *
 ### 1. Clone & Set Up Environment
 ```bash
 # Clone repository
-git clone https://github.com/your-username/employee-attrition-analysis.git
+git clone https://github.com/vardaanbazaz/employee-attrition-analysis.git
 cd employee-attrition-analysis
 
 # Create and activate virtual environment
