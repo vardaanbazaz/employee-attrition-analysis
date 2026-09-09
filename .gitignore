@@ -58,3 +58,6 @@ Thumbs.db
 models/*.pkl
 models/*.sav
 
+
+# Local audit notes (not for public repo)
+AUDIT_REPORT.md

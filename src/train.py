@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import pickle
+import joblib
 from typing import Any, Dict, Optional, Tuple
 import numpy as np
 
@@ -99,7 +99,7 @@ def train_logistic_regression(
 
 def save_model(model: Any, filepath: str) -> str:
     """
-    Serializes and saves a trained model instance to disk using pickle.
+    Serializes and saves a trained model instance to disk using joblib.
 
     Args:
         model (Any): Trained classifier instance.
@@ -109,8 +109,7 @@ def save_model(model: Any, filepath: str) -> str:
         str: Absolute path of saved model file.
     """
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    with open(filepath, "wb") as f:
-        pickle.dump(model, f)
+    joblib.dump(model, filepath)
     print(f"Model saved successfully to: {filepath}")
     return filepath
 

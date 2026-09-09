@@ -131,8 +131,6 @@ def generate_shap_explainability(
     GRID_COLOR = "#1E293B"
 
     plt.close('all')
-    fig = plt.figure(figsize=(11, 8), dpi=300)
-    fig.patch.set_facecolor(BG_COLOR)
 
     # Generate SHAP summary dot plot
     shap.summary_plot(
