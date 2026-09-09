@@ -17,10 +17,13 @@ Employee turnover costs enterprises millions annually in lost productivity, onbo
 This platform transitions workforce management from reactive tracking to **predictive intelligence**. Built as a modular Python ML engine, it ingests multi-source HR telemetry (demographics, compensation, performance, tenure), resolves class imbalance using **SMOTE**, trains gradient-boosted decision tree models (**XGBoost** & **Random Forest**), and decodes model decisions down to individual feature attributions via **SHAP**.
 
 ### Key Business Metrics & Machine Learning Pipeline Wins
-* **Dataset Scale**: Processed and merged **50,000 employee records** across 36 tabular features.
-* **Class Imbalance Resolution**: Applied SMOTE oversampling to achieve a balanced **35,148 training set** (`50% / 50%` target split).
-* **Predictive Performance**: Evaluated classification metrics (Accuracy, Precision, Recall, F1, ROC-AUC) across Logistic Regression baselines, Random Forest, and XGBoost classifiers.
+* **Dataset Scale**: Uses the IBM/Watson HR Employee Attrition dataset — **1,470 employee records** across 35 features. Target split: **83.88% retained / 16.12% attrition**. This is a small, well-known benchmark dataset, not a large-scale enterprise extract — see the Limitations note below.
+* **Class Imbalance Resolution**: Applied SMOTE oversampling to the training split, balancing it to **1,726 records** (863 / 863 per class).
+* **Baseline Performance (XGBoost)**: Accuracy 0.8549, Precision 0.60, Recall 0.2958, F1 0.3962, ROC-AUC 0.7592.
 * **Explainability Coverage**: Integrated 100% SHAP feature attribution mapping, translating black-box ML outputs into actionable retention levers for HR leadership.
+
+### Limitations
+At 1,470 rows and a 16% positive class, the dataset is small for a gradient-boosted classifier, and post-SMOTE balancing works on synthetic minority samples rather than more real examples. This caps generalizability and shows up directly in the modest recall (0.2958) — the model misses most actual leavers. Treat this as a known tradeoff of dataset size and class imbalance, not a pipeline defect.
 
 ---
 
@@ -37,8 +40,8 @@ src/
 ```
 
 ### 1. Data Ingestion ([`src/data_ingestion.py`](src/data_ingestion.py))
-* **Primary Key Relational Join**: Automates the joining of tabular demographics (`data/raw/HR_1.xlsx`) and compensation/performance metrics (`data/raw/HR_2.xlsx`) on `EmployeeNumber` ↔ `Employee ID`.
-* **Data Hygiene**: Cleans trailing unformatted Excel columns and validates column schemas prior to downstream processing.
+* **Source**: Loads the IBM/Watson HR Employee Attrition dataset (`data/actual/WA_Fn-UseC_-HR-Employee-Attrition.csv`) — 1,470 rows, 35 columns.
+* **Data Hygiene**: Validates column schemas prior to downstream processing.
 
 ### 2. Preprocessing & Imbalance Handling ([`src/preprocessing.py`](src/preprocessing.py))
 * **Feature Encoding**: Converts categorical string columns (`Department`, `JobRole`, `OverTime`, `BusinessTravel`, etc.) into model-ready integers using `LabelEncoder`.
@@ -50,7 +53,7 @@ src/
 * **Artifact Serialization**: Automatically exports fitted model binaries (`.pkl`) to `models/` for downstream inference services.
 
 ### 4. Evaluation & Diagnostic Diagnostics ([`src/evaluate.py`](src/evaluate.py))
-* **Metric Reporting**: Computes Precision, Recall, F1-Score, ROC-AUC, and Confusion Matrices on unseen test datasets (`15,000 records`).
+* **Metric Reporting**: Computes Precision, Recall, F1-Score, ROC-AUC, and Confusion Matrices on the held-out test split (`441 records`, 30% of the dataset).
 * **SHAP Integration**: Automatically triggers SHAP value calculation and summary plot generation.
 
 ---
@@ -61,13 +64,13 @@ Custom dark-mode visual telemetry generated programmatically using `pandas`, `ma
 
 ### 1. Departmental Attrition Diagnostics
 ![Departmental Attrition Rate](assets/attrition_by_department.png)
-* **Insight**: Quantifies percentage turnover and exit counts across departments. Highlights elevated attrition in high-strain units like Research & Development and Software Engineering.
+* **Insight**: Sales has the highest attrition rate at **20.6%** (92/446), HR next at **19.0%** (12/63), and Research & Development lowest at **13.8%** (133/961) — despite R&D carrying the largest headcount and the most absolute departures.
 
 ---
 
 ### 2. Compensation Density & Flight Risk Analysis
 ![Compensation Density vs Attrition Risk](assets/compensation_vs_attrition.png)
-* **Insight**: Kernel Density Estimation (KDE) plot comparing income distributions of retained vs. departed staff. Attrition is heavily concentrated among staff earning under **$3,000/month**.
+* **Insight**: Kernel Density Estimation (KDE) plot comparing income distributions of retained vs. departed staff. Median monthly income for departed employees is **$3,202** vs. **$5,204** for retained employees.
 
 ---
 
@@ -86,12 +89,16 @@ To transition from "black-box" predictions to actionable business intelligence, 
 ### Demystifying the "Black Box": Flight Risk Attribution
 The SHAP Summary Plot maps both the **magnitude** and **direction** of feature influences on the XGBoost classifier's flight risk predictions:
 
-1. **OverTime (Primary Risk Driver)**:
-   - High overtime frequency (red dots extending to the right) exerts the strongest positive push on SHAP values, significantly elevating predicted flight risk.
-2. **Monthly Income & Daily Rates**:
-   - Low monthly income (`MonthlyIncome`) and low daily rates (`DailyRate`) push SHAP scores into the positive churn domain, proving that under-compensated employees face higher flight risk.
-3. **Tenure & Manager Stability**:
-   - Brief tenure (`YearsAtCompany`) and short relationships with current managers (`YearsWithCurrManager`) combined with long commutes (`DistanceFromHome`) strongly amplify churn probability.
+1. **OverTime (#1 Ranked Feature)**:
+   - The single strongest driver of predicted flight risk. Employees with `OverTime = Yes` attrite at **30.5%**, vs. **10.4%** for `OverTime = No` — roughly 3x the relative rate.
+2. **YearsWithCurrManager**:
+   - Ranked #2. Shorter relationships with the current manager push SHAP values toward higher churn probability.
+3. **StockOptionLevel**:
+   - Ranked #3. Lower stock option levels correlate with elevated flight risk.
+4. **MonthlyIncome**:
+   - Ranked #4. Lower monthly income pushes SHAP scores into the positive churn domain, consistent with the compensation gap seen in the KDE plot above.
+5. **NumCompaniesWorked**:
+   - Ranked #5. Prior job-hopping history contributes measurably to predicted risk.
 
 By evaluating these individual Shapley attributions, HR leaders can understand *why* an employee is flagged as high-risk and implement targeted retention interventions (e.g., overtime caps or salary benchmarking) before an exit occurs.
 
@@ -146,7 +153,7 @@ employee-attrition-analysis/
 ├── .gitignore                         # Version control exclusions
 │
 ├── src/                               # Modular Machine Learning Pipeline
-│   ├── data_ingestion.py              # Ingests & relationally merges raw Excel files
+│   ├── data_ingestion.py              # Ingests & validates the source CSV
 │   ├── preprocessing.py               # Label encoding, scaling, & SMOTE oversampling
 │   ├── train.py                       # Fits XGBoost, Random Forest, & Logistic Regression
 │   └── evaluate.py                    # Metric diagnostics & SHAP explainability plot generator
@@ -165,9 +172,8 @@ employee-attrition-analysis/
 │   └── employee_attrition_analysis.sql # Diagnostic SQL query suite
 │
 ├── data/
-│   └── raw/
-│       ├── HR_1.xlsx                  # Demographics & satisfaction dataset
-│       └── HR_2.xlsx                  # Compensation & tenure dataset
+│   └── actual/
+│       └── WA_Fn-UseC_-HR-Employee-Attrition.csv # IBM/Watson HR Attrition dataset (1,470 rows, 35 cols)
 │
 ├── models/                            # Serialized model binaries (.pkl)
 │   └── xgboost_model.pkl
