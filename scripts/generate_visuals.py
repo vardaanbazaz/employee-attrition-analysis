@@ -2,25 +2,28 @@
 """
 Generate Custom Dark-Mode Analytics Visuals for Employee Attrition Analysis.
 
-This script loads raw HR telemetry data (data/raw/HR_1.xlsx and HR_2.xlsx),
-merges employee records, configures a premium dark-mode matplotlib/seaborn aesthetic
-with a copper & teal color palette, and generates 3 high-resolution plots saved to assets/:
+This script loads the raw HR telemetry data (data/actual/WA_Fn-UseC_-HR-Employee-
+Attrition.csv) via src.data_ingestion, configures a premium dark-mode
+matplotlib/seaborn aesthetic with a copper & teal color palette, and generates
+3 high-resolution plots saved to assets/:
 1. attrition_by_department.png
 2. compensation_vs_attrition.png
 3. correlation_heatmap.png
 """
 
 import os
-import pandas as pd
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.colors as mcolors
 import seaborn as sns
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from src.data_ingestion import ingest_data
+
 # Ensure assets directory exists
 ASSETS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'assets'))
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'raw'))
 os.makedirs(ASSETS_DIR, exist_ok=True)
 
 # Define Dark Mode & Color Palette Constants
@@ -57,24 +60,8 @@ def set_dark_theme():
     })
 
 def load_data():
-    """Loads and merges HR_1.xlsx and HR_2.xlsx datasets."""
-    hr1_path = os.path.join(DATA_DIR, 'HR_1.xlsx')
-    hr2_path = os.path.join(DATA_DIR, 'HR_2.xlsx')
-    
-    print(f"Loading raw datasets from:\n - {hr1_path}\n - {hr2_path}")
-    df1 = pd.read_excel(hr1_path)
-    df2 = pd.read_excel(hr2_path)
-    
-    # Merge datasets on Employee ID
-    df = df1.merge(df2, left_on='EmployeeNumber', right_on='Employee ID')
-    
-    # Drop any trailing empty/unnamed columns if present
-    unnamed_cols = [c for c in df.columns if 'Unnamed' in c]
-    if unnamed_cols:
-        df = df.drop(columns=unnamed_cols)
-        
-    print(f"Data successfully merged! Total records: {len(df):,}")
-    return df
+    """Loads the HR attrition dataset via src.data_ingestion."""
+    return ingest_data()
 
 def generate_attrition_by_department(df):
     """Generates a stylized horizontal bar chart of Attrition Rate (%) by Department."""
