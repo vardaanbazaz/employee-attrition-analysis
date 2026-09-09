@@ -3,6 +3,10 @@
 -- Goal: Analyze key organizational drivers of employee attrition.
 -- Database Compatibility: MySQL (ANSI-SQL compliant)
 -- Schema: Normalized hr_1 (Demographics) and hr_2 (Performance & Finance)
+--
+-- LEGACY / ILLUSTRATIVE: written against schema.sql's two-table design, which
+-- the current pipeline no longer uses (single flat CSV, no database step).
+-- Kept for reference only; not run as part of src/.
 -- =========================================================================
 
 USE hrdataanalytics;

@@ -167,19 +167,16 @@ employee-attrition-analysis/
 │   ├── compensation_vs_attrition.png  # Dark-mode compensation KDE density plot
 │   └── correlation_heatmap.png        # Dark-mode numerical feature correlation matrix
 │
-├── sql/
-│   ├── schema.sql                     # DDL scripts for normalized MySQL database
-│   └── employee_attrition_analysis.sql # Diagnostic SQL query suite
+├── sql/                                # Legacy/illustrative — predates the single-CSV pipeline, not wired into src/
+│   ├── schema.sql                     # DDL for a normalized two-table MySQL schema (hr_1/hr_2)
+│   └── employee_attrition_analysis.sql # Diagnostic query suite against that two-table schema
 │
 ├── data/
 │   └── actual/
 │       └── WA_Fn-UseC_-HR-Employee-Attrition.csv # IBM/Watson HR Attrition dataset (1,470 rows, 35 cols)
 │
-├── models/                            # Serialized model binaries (.pkl)
-│   └── xgboost_model.pkl
-│
-└── notebooks/
-    └── employee_churn_prediction.ipynb # Interactive EDA & prototyping notebook
+└── models/                            # Serialized model binaries (.pkl)
+    └── xgboost_model.pkl
 ```
 
 ---

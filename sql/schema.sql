@@ -2,6 +2,12 @@
 -- DATABASE SCHEMA CREATION
 -- Project: Employee Attrition & Performance Analysis
 -- Database: MySQL
+--
+-- LEGACY / ILLUSTRATIVE: this two-table (hr_1/hr_2) schema was designed for
+-- the original data/raw/HR_1.xlsx + HR_2.xlsx source pair. The pipeline now
+-- runs on a single flat CSV (data/actual/WA_Fn-UseC_-HR-Employee-Attrition.csv,
+-- see src/data_ingestion.py) with no database step. Kept for reference only;
+-- not wired into src/.
 -- ==========================================
 
 CREATE DATABASE IF NOT EXISTS hrdataanalytics;
