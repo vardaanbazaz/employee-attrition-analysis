@@ -6,6 +6,8 @@
 ![SHAP](https://img.shields.io/badge/SHAP-Explainable%20AI-4B0082?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
 
+> Originally derived from [bhanmrinal/Employee-Attrition-and-Churn-Analysis](https://github.com/bhanmrinal/Employee-Attrition-and-Churn-Analysis), a BI-dashboard project. This repo is a Python ML rebuild on a different dataset.
+
 An enterprise-grade, end-to-end Machine Learning and Diagnostic Analytics platform designed to proactively identify employee flight risk, quantify compensation & workload friction points, and provide model transparency using **SHAP (SHapley Additive exPlanations)**.
 
 ---
