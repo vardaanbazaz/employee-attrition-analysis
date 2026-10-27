@@ -130,7 +130,7 @@ if __name__ == '__main__':
     X_res, y_res = prep[:2].fit_resample(X_tr, y_tr)
     prep.fit(X_tr, y_tr)
     X_te_enc = prep.transform(X_te)
-    print(f"Preprocessing completed successfully!")
+    print("Preprocessing completed successfully!")
     print(f"X_train shape: {X_tr.shape}, X_test shape: {X_te.shape}")
     print(f"SMOTENC class counts: {y_tr.value_counts().to_dict()} -> {pd.Series(y_res).value_counts().to_dict()}")
     print(f"Total features after encoding: {X_te_enc.shape[1]}")

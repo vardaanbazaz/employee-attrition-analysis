@@ -2,7 +2,7 @@
 """
 Generate Custom Dark-Mode Analytics Visuals for Employee Attrition Analysis.
 
-This script loads the raw HR telemetry data (data/actual/WA_Fn-UseC_-HR-Employee-
+This script loads the raw HR dataset (data/actual/WA_Fn-UseC_-HR-Employee-
 Attrition.csv) via src.data_ingestion, configures a premium dark-mode
 matplotlib/seaborn aesthetic with a copper & teal color palette, and generates
 3 high-resolution plots saved to assets/:
@@ -122,7 +122,7 @@ def generate_attrition_by_department(df):
         
     # Title & Subtitle without overlapping
     fig.suptitle('Employee Attrition Rate by Department', fontsize=16, fontweight='bold', color=TEXT_COLOR, x=0.125, y=0.96, ha='left')
-    ax.set_title('Percentage of departing workforce across organizational units', fontsize=11, color=MUTED_TEXT, pad=15, loc='left')
+    ax.set_title('Share of employees who left, by department (in this dataset)', fontsize=11, color=MUTED_TEXT, pad=15, loc='left')
     
     plt.tight_layout()
     plt.subplots_adjust(top=0.86)
@@ -148,6 +148,7 @@ def generate_compensation_vs_attrition(df):
         color=TEAL_PRIMARY,
         alpha=0.35,
         linewidth=2,
+        cut=0,
         label='Stayed (Retained)',
         ax=ax
     )
@@ -159,6 +160,7 @@ def generate_compensation_vs_attrition(df):
         color=COPPER_PRIMARY,
         alpha=0.45,
         linewidth=2,
+        cut=0,
         label='Departed (Attrition)',
         ax=ax
     )
@@ -173,9 +175,9 @@ def generate_compensation_vs_attrition(df):
     ax.set_axisbelow(True)
     
     # Formatting Axes
-    ax.set_xlabel('Monthly Income ($)', fontsize=11, fontweight='bold', color=MUTED_TEXT, labelpad=10)
+    ax.set_xlabel('Monthly Income', fontsize=11, fontweight='bold', color=MUTED_TEXT, labelpad=10)
     ax.set_ylabel('Density Distribution', fontsize=11, fontweight='bold', color=MUTED_TEXT, labelpad=10)
-    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"${int(x/1000)}k" if x >= 1000 else f"${int(x)}"))
+    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"{x/1000:g}k" if x >= 1000 else f"{x:g}"))
     
     # Calculate medians for annotations
     median_stay = df[df['Attrition'] == 'No']['MonthlyIncome'].median()
@@ -185,8 +187,8 @@ def generate_compensation_vs_attrition(df):
     ax.axvline(median_stay, color=TEAL_PRIMARY, linestyle=':', linewidth=1.5, alpha=0.8)
     ax.axvline(median_leave, color=COPPER_PRIMARY, linestyle=':', linewidth=1.5, alpha=0.8)
     
-    ax.text(median_stay + 1000, ax.get_ylim()[1] * 0.75, f'Median Stayed: ${median_stay:,.0f}', color=TEAL_PRIMARY, fontsize=9.5, fontweight='bold')
-    ax.text(median_leave + 1000, ax.get_ylim()[1] * 0.55, f'Median Departed: ${median_leave:,.0f}', color=COPPER_PRIMARY, fontsize=9.5, fontweight='bold')
+    ax.text(median_stay + 1000, ax.get_ylim()[1] * 0.75, f'Median Stayed: {median_stay:,.0f}', color=TEAL_PRIMARY, fontsize=9.5, fontweight='bold')
+    ax.text(median_leave + 1000, ax.get_ylim()[1] * 0.55, f'Median Departed: {median_leave:,.0f}', color=COPPER_PRIMARY, fontsize=9.5, fontweight='bold')
 
     # Legend
     legend = ax.legend(
@@ -200,8 +202,8 @@ def generate_compensation_vs_attrition(df):
     legend.get_frame().set_linewidth(0.8)
     
     # Title & Subtitle without overlapping
-    fig.suptitle('Compensation Density vs. Attrition Risk', fontsize=16, fontweight='bold', color=TEXT_COLOR, x=0.125, y=0.96, ha='left')
-    ax.set_title('Monthly income distribution comparison revealing flight risk thresholds', fontsize=11, color=MUTED_TEXT, pad=15, loc='left')
+    fig.suptitle('Monthly Income by Attrition Status', fontsize=16, fontweight='bold', color=TEXT_COLOR, x=0.125, y=0.96, ha='left')
+    ax.set_title('Density of monthly income for employees who stayed vs. left (in this dataset)', fontsize=11, color=MUTED_TEXT, pad=15, loc='left')
     
     plt.tight_layout()
     plt.subplots_adjust(top=0.86)
@@ -285,8 +287,8 @@ def generate_correlation_heatmap(df):
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=9.5, fontweight='bold', color=MUTED_TEXT)
     
     # Title & Subtitle without overlapping
-    fig.suptitle('Correlation Matrix of Numerical HR Variables', fontsize=16, fontweight='bold', color=TEXT_COLOR, x=0.125, y=0.96, ha='left')
-    ax.set_title('Inter-feature linear relationships across key organizational & telemetry metrics', fontsize=11, color=MUTED_TEXT, pad=15, loc='left')
+    fig.suptitle('Correlation Matrix of Numeric HR Features', fontsize=16, fontweight='bold', color=TEXT_COLOR, x=0.125, y=0.96, ha='left')
+    ax.set_title('Pearson correlations between 12 numeric features; Attrition is not included', fontsize=11, color=MUTED_TEXT, pad=15, loc='left')
     
     plt.tight_layout()
     plt.subplots_adjust(top=0.88)

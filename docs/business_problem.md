@@ -1,18 +1,16 @@
 # Business Problem: Employee Attrition & Retention
 
 ## Executive Summary
-Employee attrition refers to the naturally occurring reduction of an organization's workforce when employees leave, retire, or resign and are not immediately replaced. High rates of employee attrition pose a severe threat to organization stability, resulting in rising costs, loss of institutional knowledge, and decreased team morale.
+Employee attrition refers to the naturally occurring reduction of an organization's workforce when employees leave, retire, or resign and are not immediately replaced. High attrition can raise hiring and training costs, lose institutional knowledge, and affect team morale.
 
-This project treats attrition as a predictive intelligence problem rather than a retrospective reporting one. It uses a modular Python machine learning pipeline to ingest historical HR records, model employee flight risk with gradient-boosted classifiers (XGBoost, Random Forest), and decode individual predictions with **SHAP (SHapley Additive exPlanations)** — moving HR teams from reactive exit surveys toward proactive, targeted retention interventions.
+This project treats attrition as a predictive intelligence problem rather than a retrospective reporting one. It uses a modular Python machine learning pipeline to ingest IBM's fictional HR dataset, compare four classifiers (a dummy baseline, Logistic Regression, Random Forest and XGBoost), select one by cross-validation, and decode individual predictions with **SHAP (SHapley Additive exPlanations)** — moving HR teams from reactive exit surveys toward proactive, targeted retention interventions.
 
 ---
 
 ## The Cost of Employee Attrition
-Employee turnover is a major financial and operational burden. Research indicates that replacing an employee can cost anywhere from **50% to 200% of their annual salary**, depending on the role's seniority and specialization.
-
-These costs are divided into:
+Employee turnover carries costs, which fall into:
 * **Direct Costs**: Recruitment advertising, agency fees, hiring manager time, signing bonuses, and structured training materials for new hires.
-* **Indirect Costs (Lost Productivity)**: Vacant roles mean other team members must assume extra workloads, causing burnout. Furthermore, new hires require 3–6 months to reach full productivity.
+* **Indirect Costs (Lost Productivity)**: Vacant roles mean other team members must assume extra workloads, causing burnout.
 * **Loss of Institutional Knowledge**: When skilled employees depart, they take vital context, client relationships, and workflow expertise with them.
 
 ---
