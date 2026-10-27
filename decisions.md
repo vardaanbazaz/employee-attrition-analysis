@@ -8,6 +8,41 @@ stated reason.
 
 ---
 
+### 2026-10-27 — Persist full fitted pipelines; evaluate.py loads, never retrains
+- **Decision:** `src/train.py` saves each fitted imblearn Pipeline (preprocessing + model) to `models/<name>_pipeline.pkl`, plus the CV summary to `models/cv_results.pkl`. `src/evaluate.py` loads them, raises `FileNotFoundError` ending "Run `python src/train.py` first." if any is missing, and writes `assets/metrics.json` plus `roc_curves.png`, `pr_curves.png`, `confusion_matrix.png` and `shap_summary.png`.
+- **Why:** Specified in the C4 plan: evaluation must not retrain. Saving the whole pipeline (not just the classifier) means a saved artifact can score raw rows. The CV summary is a `.pkl` so the existing `models/*.pkl` ignore rule keeps it out of git.
+- **Alternatives considered:** Saving only the classifier (previous behavior); writing the CV summary as JSON in `models/` (would need a new ignore rule); recomputing CV inside `evaluate.py`.
+- **Tradeoff accepted:** `evaluate.py` depends on `train.py` having been run with the same code; stale `.pkl` files are not detected. `metrics.json` is tracked in git, the `.pkl` files are not.
+- **Source:** made-now
+
+### 2026-10-27 — Select the headline model by 5-fold CV PR-AUC on the training split
+- **Decision:** Candidates are `DummyClassifier(strategy="most_frequent")`, Logistic Regression, Random Forest and XGBoost, with the previous hyperparameters unchanged. Each is scored with `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` on the 1,029 training rows. The headline is the best mean CV PR-AUC (average precision), tiebreak mean CV F1. The 441 test rows are used only for final reporting.
+- **Why:** Specified in the C4 plan: the test set must never be used for selection. The dummy model gives a no-skill floor to compare against.
+- **Alternatives considered:** Selecting on test metrics; ROC-AUC or F1 as the primary metric; hyperparameter tuning (out of scope for C4).
+- **Tradeoff accepted:** With the current data, XGBoost (CV PR-AUC 0.5776 ± 0.0555) beats Logistic Regression (0.5772 ± 0.0761) by 0.0004, well inside one standard deviation, so the headline choice is effectively a tie decided by noise. The tiebreak only applies to exact ties. Hyperparameters remain hand-picked.
+- **Source:** made-now
+
+### 2026-10-27 — SHAP explainer chosen by headline model type
+- **Decision:** SHAP runs on the headline pipeline's encoded test set: `shap.LinearExplainer` (background = encoded, non-resampled training set) for Logistic Regression, `shap.TreeExplainer(feature_perturbation="tree_path_dependent")` for Random Forest and XGBoost. Any subsampling uses `random_state=42`. The top 10 features by mean |SHAP| go into `metrics.json`, and the plot subtitle names the top three instead of a hard-coded list.
+- **Why:** Specified in the C4 plan, since the headline model is no longer fixed to a tree model.
+- **Alternatives considered:** KernelExplainer for every model (model-agnostic but slow).
+- **Tradeoff accepted:** No SHAP plot if the dummy model ever wins selection (raises `ValueError`).
+- **Source:** made-now
+
+### 2026-10-27 — imblearn Pipeline: scale numerics, SMOTENC, encode, model
+- **Decision:** One imblearn `Pipeline` per model: `StandardScaler` on numeric columns only, then `SMOTENC(categorical_features=<7 categorical columns>, random_state=42)` while the categoricals are still strings, then categorical encoding, then the model. Every step is fitted on training folds only. Drops `EmployeeNumber`, `EmployeeCount`, `StandardHours`, `Over18`. Same 70/30 stratified split (1,029 / 441), `random_state=42` everywhere.
+- **Why:** Specified in the C4 plan. SMOTENC treats categoricals as categories, so resampling no longer creates fractional or invalid category values the way plain SMOTE on label codes did.
+- **Alternatives considered:** Plain SMOTE after one-hot encoding (creates fractional dummy values); class weights instead of resampling.
+- **Tradeoff accepted:** `BusinessTravel` is ordinally encoded after scaling, so it stays on a 0–2 scale while the other numerics are standardized. The dummy model sees a balanced (863/863) training set, so "most frequent" resolves a tie to class 0.
+- **Source:** made-now
+
+### 2026-10-27 — Per-column categorical encoding
+- **Decision:** `BusinessTravel` ordinal (Non-Travel=0, Travel_Rarely=1, Travel_Frequently=2); `Gender`, `OverTime` with `OneHotEncoder(drop='if_binary')`; `Department`, `JobRole`, `MaritalStatus`, `EducationField` with `OneHotEncoder(handle_unknown='ignore')`. 30 raw features become 47 after encoding.
+- **Why:** LabelEncoder was wrong for Logistic Regression and for nominal features (stated when superseding it). BusinessTravel has a natural order; the binary columns need one indicator, not two.
+- **Alternatives considered:** One-hot for every categorical, including BusinessTravel; keeping LabelEncoder.
+- **Tradeoff accepted:** More features (47 vs 30) and an assumed equal spacing between the BusinessTravel levels.
+- **Source:** made-now
+
 ### 2026-10-27 — Remove the legacy SQL files
 - **Decision:** Delete `sql/` (`schema.sql` and `employee_attrition_analysis.sql`) and its references in `README.md` and `flow.md`.
 - **Why:** Removed legacy SQL: queried the old HR_1/HR_2 tables, not the current dataset; redundant for the ML pipeline.
@@ -31,6 +66,7 @@ Superseded by Remove the legacy SQL files.
 - **Source:** inferred
 
 ### 2026-10-27 — SHAP TreeExplainer for explainability
+Superseded by SHAP explainer chosen by headline model type.
 - **Decision:** Explain the XGBoost model with `shap.TreeExplainer(feature_perturbation="tree_path_dependent")` and a summary dot plot written to `assets/shap_summary.png`, subsampling to at most 500 rows.
 - **Why:** Likely: TreeExplainer gives exact, fast SHAP values for tree ensembles, and per-feature direction is easier to communicate to non-technical readers than raw feature importances.
 - **Alternatives considered:** Built-in tree feature importances; permutation importance; KernelExplainer (model-agnostic but slow).
@@ -38,6 +74,7 @@ Superseded by Remove the legacy SQL files.
 - **Source:** inferred
 
 ### 2026-10-27 — joblib serialization of fitted models, not tracked in git
+Superseded by Persist full fitted pipelines; evaluate.py loads, never retrains.
 - **Decision:** Save the fitted classifier with `joblib.dump` to `models/<model>_model.pkl`; `.gitignore` excludes `models/*.pkl` and `models/*.sav`.
 - **Why:** Likely: joblib is the standard scikit-learn persistence format, and binaries are regenerable so they don't belong in git.
 - **Alternatives considered:** Plain `pickle`; committing the model; ONNX or XGBoost's native JSON format.
@@ -45,6 +82,7 @@ Superseded by Remove the legacy SQL files.
 - **Source:** inferred
 
 ### 2026-10-27 — Three fixed-hyperparameter classifiers, XGBoost as default
+Superseded by Select the headline model by 5-fold CV PR-AUC on the training split.
 - **Decision:** `src/train.py` supports Logistic Regression (C=1.0, max_iter=200), Random Forest (150 trees, max_depth=15, min_samples_split=5, min_samples_leaf=10) and XGBoost (200 trees, learning_rate=0.1, max_depth=6). XGBoost is the default in `train_pipeline()` and `run_full_pipeline_evaluation()`.
 - **Why:** Likely: LR as an interpretable baseline, RF and XGBoost as the usual strong choices for tabular data, with XGBoost assumed best.
 - **Alternatives considered:** Hyperparameter search; LightGBM/CatBoost.
@@ -52,6 +90,7 @@ Superseded by Remove the legacy SQL files.
 - **Source:** inferred
 
 ### 2026-10-27 — SMOTE oversampling on the training split only
+Superseded by imblearn Pipeline: scale numerics, SMOTENC, encode, model.
 - **Decision:** Apply `imblearn.over_sampling.SMOTE(random_state=42)` to the training split after scaling; a `comb_smoteenn` flag allows SMOTEENN instead (unused by default).
 - **Why:** Likely: the target is imbalanced (about 16% attrition), and oversampling only after the split keeps synthetic rows out of the test set.
 - **Alternatives considered:** Class weights (`class_weight`, `scale_pos_weight`); random undersampling; SMOTEENN (left as an option).
@@ -59,6 +98,7 @@ Superseded by Remove the legacy SQL files.
 - **Source:** inferred
 
 ### 2026-10-27 — 70/30 stratified split with StandardScaler fitted on train
+Superseded by imblearn Pipeline: scale numerics, SMOTENC, encode, model.
 - **Decision:** `train_test_split(test_size=0.3, stratify=y, random_state=42)` gives 1,029 train / 441 test rows; `StandardScaler` is fitted on train and applied to test.
 - **Why:** Likely: stratification preserves the 16% positive rate in both splits, and fitting the scaler on train only avoids leaking test statistics.
 - **Alternatives considered:** 80/20 split; k-fold cross-validation.
@@ -66,6 +106,7 @@ Superseded by Remove the legacy SQL files.
 - **Source:** inferred
 
 ### 2026-10-27 — LabelEncoder for all categorical columns
+Superseded by Per-column categorical encoding.
 - **Decision:** Every object column (`BusinessTravel`, `Department`, `EducationField`, `Gender`, `JobRole`, `MaritalStatus`, `OverTime`) is integer-encoded with `LabelEncoder`, fitted on the full dataset before the split.
 - **Why:** Default choice, not deliberately compared. Wrong for Logistic Regression and for nominal features.
 - **Alternatives considered:** One-hot encoding.
@@ -73,6 +114,7 @@ Superseded by Remove the legacy SQL files.
 - **Source:** inferred
 
 ### 2026-10-27 — Drop ID and constant columns
+Superseded by imblearn Pipeline: scale numerics, SMOTENC, encode, model.
 - **Decision:** Drop `EmployeeNumber`, `EmployeeCount`, `StandardHours` and `Over18` (and `Employee ID` if present) before modeling.
 - **Why:** `EmployeeNumber` is an identifier with no predictive meaning, and the other three hold one value for every row in this dataset.
 - **Alternatives considered:** Keeping them and relying on the models to ignore them.
