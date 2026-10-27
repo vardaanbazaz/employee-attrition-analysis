@@ -27,6 +27,14 @@ At 1,470 rows and a 16% positive class, the dataset is small for a gradient-boos
 
 ---
 
+## 🗃️ Data Source & License
+
+* **Source**: [IBM HR Analytics Employee Attrition & Performance (Kaggle)](https://www.kaggle.com/datasets/pavansubhasht/ibm-hr-analytics-attrition-dataset)
+* A fictional dataset created by IBM data scientists (IBM Watson Analytics sample). 1,470 rows x 35 columns.
+* **License**: [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) for the database, [DbCL 1.0](https://opendatacommons.org/licenses/dbcl/1-0/) for the contents.
+
+---
+
 ## 🏗️ Pipeline Architecture & Modular System Design (`src/`)
 
 The core repository architecture decouples the machine learning workflow into a modular, production-ready Python pipeline located in [`src/`](src/):
@@ -169,6 +177,7 @@ employee-attrition-analysis/
 │
 ├── data/
 │   └── actual/
+│       ├── README.md                  # Dataset source & license
 │       └── WA_Fn-UseC_-HR-Employee-Attrition.csv # IBM/Watson HR Attrition dataset (1,470 rows, 35 cols)
 │
 └── models/                            # Serialized model binaries (.pkl)
@@ -179,6 +188,4 @@ employee-attrition-analysis/
 
 ## 📄 License
 
-The code in this repository is distributed under the MIT License. See `LICENSE` for details.
-
-The MIT License covers code written in this repo only. The dataset in `data/` is not covered by it; it is under ODbL 1.0 / DbCL 1.0.
+The MIT License (see `LICENSE`) covers code written in this repo only; the dataset in `data/` is not covered by it and is under [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) / [DbCL 1.0](https://opendatacommons.org/licenses/dbcl/1-0/).
