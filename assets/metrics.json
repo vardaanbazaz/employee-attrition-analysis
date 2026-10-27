@@ -1,0 +1,260 @@
+{
+  "random_state": 42,
+  "split": {
+    "train_rows": 1029,
+    "test_rows": 441,
+    "test_size": 0.3,
+    "stratified": true
+  },
+  "prevalence": {
+    "overall": 0.16122448979591836,
+    "train": 0.16132167152575316,
+    "test": 0.16099773242630386
+  },
+  "n_features_raw": 30,
+  "n_features_encoded": 47,
+  "smotenc_class_counts": {
+    "before": {
+      "0": 863,
+      "1": 166
+    },
+    "after": {
+      "0": 863,
+      "1": 863
+    }
+  },
+  "selection": {
+    "cv": "StratifiedKFold(n_splits=5, shuffle=True, random_state=42) on training split only",
+    "primary_metric": "pr_auc (average precision)",
+    "tiebreak_metric": "f1"
+  },
+  "headline_model": "xgboost",
+  "models": {
+    "dummy": {
+      "cv": {
+        "pr_auc": {
+          "mean": 0.16132133554345254,
+          "std": 0.0018880191310635941
+        },
+        "f1": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "roc_auc": {
+          "mean": 0.5,
+          "std": 0.0
+        },
+        "precision": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "recall": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "accuracy": {
+          "mean": 0.8386786644565476,
+          "std": 0.0018880191310635941
+        }
+      },
+      "test": {
+        "accuracy": 0.8390022675736961,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "roc_auc": 0.5,
+        "pr_auc": 0.16099773242630386,
+        "confusion_matrix": [
+          [
+            370,
+            0
+          ],
+          [
+            71,
+            0
+          ]
+        ]
+      }
+    },
+    "logistic_regression": {
+      "cv": {
+        "pr_auc": {
+          "mean": 0.5772314269154245,
+          "std": 0.07606423975158176
+        },
+        "f1": {
+          "mean": 0.5141403867220349,
+          "std": 0.04881775819278889
+        },
+        "roc_auc": {
+          "mean": 0.8187456733661946,
+          "std": 0.04188197522070516
+        },
+        "precision": {
+          "mean": 0.43152355329897896,
+          "std": 0.030590236342229495
+        },
+        "recall": {
+          "mean": 0.638680926916221,
+          "std": 0.08714663569489144
+        },
+        "accuracy": {
+          "mean": 0.8066066777172626,
+          "std": 0.01579103259873436
+        }
+      },
+      "test": {
+        "accuracy": 0.7936507936507936,
+        "precision": 0.3958333333333333,
+        "recall": 0.5352112676056338,
+        "f1": 0.4550898203592814,
+        "roc_auc": 0.7936810049486105,
+        "pr_auc": 0.5242440516357705,
+        "confusion_matrix": [
+          [
+            312,
+            58
+          ],
+          [
+            33,
+            38
+          ]
+        ]
+      }
+    },
+    "random_forest": {
+      "cv": {
+        "pr_auc": {
+          "mean": 0.5439132833677095,
+          "std": 0.057696664680268926
+        },
+        "f1": {
+          "mean": 0.47726820203092857,
+          "std": 0.060123031916374615
+        },
+        "roc_auc": {
+          "mean": 0.8037549071126084,
+          "std": 0.04796103144248528
+        },
+        "precision": {
+          "mean": 0.5575396825396824,
+          "std": 0.052224393258292374
+        },
+        "recall": {
+          "mean": 0.42245989304812837,
+          "std": 0.07224860829836416
+        },
+        "accuracy": {
+          "mean": 0.8522898413450154,
+          "std": 0.013526176511446128
+        }
+      },
+      "test": {
+        "accuracy": 0.8117913832199547,
+        "precision": 0.39285714285714285,
+        "recall": 0.30985915492957744,
+        "f1": 0.3464566929133858,
+        "roc_auc": 0.7529881994670726,
+        "pr_auc": 0.39624952402269575,
+        "confusion_matrix": [
+          [
+            336,
+            34
+          ],
+          [
+            49,
+            22
+          ]
+        ]
+      }
+    },
+    "xgboost": {
+      "cv": {
+        "pr_auc": {
+          "mean": 0.5775700386742668,
+          "std": 0.05547026551337789
+        },
+        "f1": {
+          "mean": 0.4741429851292744,
+          "std": 0.04674156528415565
+        },
+        "roc_auc": {
+          "mean": 0.8024634046753164,
+          "std": 0.04412907012525867
+        },
+        "precision": {
+          "mean": 0.6328265107212475,
+          "std": 0.07531429181346878
+        },
+        "recall": {
+          "mean": 0.38591800356506234,
+          "std": 0.06067941455773678
+        },
+        "accuracy": {
+          "mean": 0.8629552450864313,
+          "std": 0.012281809472415528
+        }
+      },
+      "test": {
+        "accuracy": 0.8616780045351474,
+        "precision": 0.6785714285714286,
+        "recall": 0.2676056338028169,
+        "f1": 0.3838383838383838,
+        "roc_auc": 0.7656261895698516,
+        "pr_auc": 0.47067364144739854,
+        "confusion_matrix": [
+          [
+            361,
+            9
+          ],
+          [
+            52,
+            19
+          ]
+        ]
+      }
+    }
+  },
+  "top_shap_features": [
+    {
+      "feature": "OverTime_Yes",
+      "mean_abs_shap": 0.8072069883346558
+    },
+    {
+      "feature": "StockOptionLevel",
+      "mean_abs_shap": 0.7710704803466797
+    },
+    {
+      "feature": "YearsWithCurrManager",
+      "mean_abs_shap": 0.5130717158317566
+    },
+    {
+      "feature": "NumCompaniesWorked",
+      "mean_abs_shap": 0.46733441948890686
+    },
+    {
+      "feature": "MonthlyIncome",
+      "mean_abs_shap": 0.44995811581611633
+    },
+    {
+      "feature": "WorkLifeBalance",
+      "mean_abs_shap": 0.4393153190612793
+    },
+    {
+      "feature": "JobSatisfaction",
+      "mean_abs_shap": 0.43612775206565857
+    },
+    {
+      "feature": "EnvironmentSatisfaction",
+      "mean_abs_shap": 0.4168744683265686
+    },
+    {
+      "feature": "Age",
+      "mean_abs_shap": 0.4048099219799042
+    },
+    {
+      "feature": "YearsSinceLastPromotion",
+      "mean_abs_shap": 0.38993343710899353
+    }
+  ]
+}

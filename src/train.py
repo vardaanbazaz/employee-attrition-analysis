@@ -3,106 +3,114 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import joblib
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict
 import numpy as np
+import pandas as pd
 
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.dummy import DummyClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import StratifiedKFold, cross_validate
+from imblearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
+from src.preprocessing import RANDOM_STATE, build_preprocessing_steps, load_split, numeric_columns
 
 
 MODELS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models"))
+CV_RESULTS_PATH = os.path.join(MODELS_DIR, "cv_results.pkl")
+
+MODEL_NAMES = ["dummy", "logistic_regression", "random_forest", "xgboost"]
+
+# Metrics computed on every CV fold; "average_precision" is PR-AUC
+CV_SCORING = {
+    "pr_auc": "average_precision",
+    "f1": "f1",
+    "roc_auc": "roc_auc",
+    "precision": "precision",
+    "recall": "recall",
+    "accuracy": "accuracy",
+}
 
 
-def train_random_forest(
-    X_train: np.ndarray, 
-    y_train: np.ndarray, 
-    n_estimators: int = 150,
-    max_depth: int = 15,
-    min_samples_split: int = 5,
-    min_samples_leaf: int = 10,
-    random_state: int = 42
-) -> RandomForestClassifier:
+def make_models(random_state: int = RANDOM_STATE) -> Dict[str, Any]:
     """
-    Trains a Random Forest Classifier.
+    Returns an unfitted instance of each candidate classifier, keyed by name.
+    Hyperparameters are fixed (no tuning).
+    """
+    return {
+        "dummy": DummyClassifier(strategy="most_frequent"),
+        "logistic_regression": LogisticRegression(C=1.0, max_iter=200, random_state=random_state),
+        "random_forest": RandomForestClassifier(
+            n_estimators=150,
+            max_depth=15,
+            min_samples_split=5,
+            min_samples_leaf=10,
+            random_state=random_state,
+            n_jobs=-1
+        ),
+        "xgboost": XGBClassifier(
+            n_estimators=200,
+            learning_rate=0.1,
+            max_depth=6,
+            random_state=random_state,
+            eval_metric="logloss",
+            n_jobs=-1
+        ),
+    }
 
-    Args:
-        X_train (np.ndarray): Training feature matrix.
-        y_train (np.ndarray): Training target vector.
+
+def build_pipeline(model: Any, numeric_cols: list, random_state: int = RANDOM_STATE) -> Pipeline:
+    """
+    Wraps a classifier in the full imblearn Pipeline:
+    scale numerics -> SMOTENC -> encode categoricals -> model.
+    """
+    return Pipeline(build_preprocessing_steps(numeric_cols, random_state) + [("model", model)])
+
+
+def model_path(name: str) -> str:
+    return os.path.join(MODELS_DIR, f"{name}_pipeline.pkl")
+
+
+def cross_validate_models(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    n_splits: int = 5,
+    random_state: int = RANDOM_STATE
+) -> Dict[str, Dict[str, Dict[str, float]]]:
+    """
+    Stratified k-fold CV on the training set only. Every pipeline step,
+    including SMOTENC, is refitted inside each training fold.
 
     Returns:
-        RandomForestClassifier: Trained Random Forest model instance.
+        Dict: {model_name: {metric: {"mean": float, "std": float}}}
     """
-    print(f"Training Random Forest Classifier (n_estimators={n_estimators}, max_depth={max_depth})...")
-    rf = RandomForestClassifier(
-        n_estimators=n_estimators,
-        max_depth=max_depth,
-        min_samples_split=min_samples_split,
-        min_samples_leaf=min_samples_leaf,
-        random_state=random_state,
-        n_jobs=-1
-    )
-    rf.fit(X_train, y_train)
-    print("Random Forest training complete.")
-    return rf
+    cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+    numeric_cols = numeric_columns(X_train)
+    results = {}
+    for name, model in make_models(random_state).items():
+        print(f"Cross-validating {name} ({n_splits}-fold stratified)...")
+        scores = cross_validate(build_pipeline(model, numeric_cols, random_state), X_train, y_train, cv=cv, scoring=CV_SCORING)
+        results[name] = {
+            metric: {"mean": float(np.mean(scores[f"test_{metric}"])), "std": float(np.std(scores[f"test_{metric}"]))}
+            for metric in CV_SCORING
+        }
+        print(f"  PR-AUC {results[name]['pr_auc']['mean']:.4f} ± {results[name]['pr_auc']['std']:.4f} | "
+              f"F1 {results[name]['f1']['mean']:.4f} ± {results[name]['f1']['std']:.4f}")
+    return results
 
 
-def train_xgboost(
-    X_train: np.ndarray, 
-    y_train: np.ndarray, 
-    n_estimators: int = 200,
-    learning_rate: float = 0.1,
-    max_depth: int = 6,
-    random_state: int = 42
-) -> XGBClassifier:
-    """
-    Trains an XGBoost Classifier.
-
-    Args:
-        X_train (np.ndarray): Training feature matrix.
-        y_train (np.ndarray): Training target vector.
-
-    Returns:
-        XGBClassifier: Trained XGBoost model instance.
-    """
-    print(f"Training XGBoost Classifier (n_estimators={n_estimators}, lr={learning_rate}, max_depth={max_depth})...")
-    xgb = XGBClassifier(
-        n_estimators=n_estimators,
-        learning_rate=learning_rate,
-        max_depth=max_depth,
-        random_state=random_state,
-        eval_metric="logloss",
-        n_jobs=-1
-    )
-    xgb.fit(X_train, y_train)
-    print("XGBoost training complete.")
-    return xgb
-
-
-def train_logistic_regression(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-    C: float = 1.0,
-    max_iter: int = 200,
-    random_state: int = 42
-) -> LogisticRegression:
-    """
-    Trains a baseline Logistic Regression Classifier.
-    """
-    print(f"Training Logistic Regression Classifier (C={C})...")
-    lr = LogisticRegression(C=C, max_iter=max_iter, random_state=random_state)
-    lr.fit(X_train, y_train)
-    print("Logistic Regression training complete.")
-    return lr
+def select_headline(cv_results: Dict[str, Dict[str, Dict[str, float]]]) -> str:
+    """Picks the model with the best mean CV PR-AUC; ties broken by mean CV F1."""
+    return max(cv_results, key=lambda m: (cv_results[m]["pr_auc"]["mean"], cv_results[m]["f1"]["mean"]))
 
 
 def save_model(model: Any, filepath: str) -> str:
     """
-    Serializes and saves a trained model instance to disk using joblib.
+    Serializes and saves a fitted pipeline to disk using joblib.
 
     Args:
-        model (Any): Trained classifier instance.
+        model (Any): Fitted pipeline instance.
         filepath (str): Target save file path.
 
     Returns:
@@ -114,40 +122,43 @@ def save_model(model: Any, filepath: str) -> str:
     return filepath
 
 
-def train_pipeline(
-    model_type: str = "xgboost",
-    save_artifact: bool = True,
-    artifact_name: Optional[str] = None
-) -> Tuple[Any, Any, Any, Any, Any, list]:
+def train_pipeline(n_splits: int = 5, random_state: int = RANDOM_STATE) -> Dict[str, Any]:
     """
-    High-level training pipeline orchestrator.
-    Ingests data, runs preprocessing, fits requested model, and saves model artifact.
+    High-level training orchestrator. Cross-validates every candidate on the
+    training split, picks the headline model by CV PR-AUC, refits every
+    pipeline on the full training split, and saves them to models/.
+    The test split is not touched here.
+
+    Returns:
+        Dict[str, Any]: CV results, headline model name, and SMOTENC class counts.
     """
-    from src.data_ingestion import ingest_data
-    from src.preprocessing import preprocess_pipeline
+    print("\n--- Initiating ML Model Training Pipeline ---")
+    X_train, _, y_train, _ = load_split()
+    numeric_cols = numeric_columns(X_train)
 
-    print(f"\n--- Initiating ML Model Training Pipeline [{model_type.upper()}] ---")
-    raw_df = ingest_data()
-    X_train, X_test, y_train, y_test, scaler, encoders, feature_names = preprocess_pipeline(raw_df)
+    cv_results = cross_validate_models(X_train, y_train, n_splits=n_splits, random_state=random_state)
+    headline = select_headline(cv_results)
+    print(f"Headline model (best CV PR-AUC): {headline}")
 
-    if model_type.lower() == "xgboost":
-        model = train_xgboost(X_train, y_train)
-        default_name = "xgboost_model.pkl"
-    elif model_type.lower() in ["random_forest", "rf"]:
-        model = train_random_forest(X_train, y_train)
-        default_name = "random_forest_model.pkl"
-    elif model_type.lower() in ["logistic_regression", "lr"]:
-        model = train_logistic_regression(X_train, y_train)
-        default_name = "logistic_regression_model.pkl"
-    else:
-        raise ValueError(f"Unsupported model type: {model_type}")
+    for name, model in make_models(random_state).items():
+        pipeline = build_pipeline(model, numeric_cols, random_state)
+        pipeline.fit(X_train, y_train)
+        save_model(pipeline, model_path(name))
 
-    if save_artifact:
-        save_filename = artifact_name or default_name
-        save_path = os.path.join(MODELS_DIR, save_filename)
-        save_model(model, save_path)
+    # Re-run the scale -> SMOTENC steps alone to record the class balance the final fit trained on
+    _, y_resampled = Pipeline(build_preprocessing_steps(numeric_cols, random_state)[:2]).fit_resample(X_train, y_train)
 
-    return model, X_test, y_test, scaler, encoders, feature_names
+    summary = {
+        "cv_results": cv_results,
+        "headline_model": headline,
+        "cv_folds": n_splits,
+        "smotenc_class_counts": {
+            "before": {str(k): int(v) for k, v in y_train.value_counts().sort_index().items()},
+            "after": {str(k): int(v) for k, v in pd.Series(y_resampled).value_counts().sort_index().items()},
+        },
+    }
+    save_model(summary, CV_RESULTS_PATH)
+    return summary
 
 
 
@@ -155,4 +166,4 @@ if __name__ == '__main__':
     print("=" * 60)
     print("Running Model Training Module Standalone Test")
     print("=" * 60)
-    train_pipeline(model_type="xgboost")
+    train_pipeline()
