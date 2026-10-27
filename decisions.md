@@ -8,6 +8,13 @@ stated reason.
 
 ---
 
+### 2026-10-27 — Pin requirements.txt to exact installed versions
+- **Decision:** `requirements.txt` pins the nine packages imported by `src/` and `scripts/` to the exact versions in the project `.venv` (`==`), taken from `pip freeze`. `openpyxl` is removed.
+- **Why:** Specified in the C3 plan. Results in `assets/metrics.json` were produced with these versions, and the code relies on recent APIs (for example SMOTENC taking column names). `openpyxl` was only needed for the old `HR_1.xlsx`/`HR_2.xlsx` source.
+- **Alternatives considered:** Minimum-version ranges (`>=`), as before; a lock file with transitive dependencies.
+- **Tradeoff accepted:** Exact pins need manual bumps. Transitive dependencies are not pinned. The pins require Python >= 3.12 (numpy, xgboost and shap), and only Python 3.14.8 has been tested.
+- **Source:** made-now
+
 ### 2026-10-27 — Persist full fitted pipelines; evaluate.py loads, never retrains
 - **Decision:** `src/train.py` saves each fitted imblearn Pipeline (preprocessing + model) to `models/<name>_pipeline.pkl`, plus the CV summary to `models/cv_results.pkl`. `src/evaluate.py` loads them, raises `FileNotFoundError` ending "Run `python src/train.py` first." if any is missing, and writes `assets/metrics.json` plus `roc_curves.png`, `pr_curves.png`, `confusion_matrix.png` and `shap_summary.png`.
 - **Why:** Specified in the C4 plan: evaluation must not retrain. Saving the whole pipeline (not just the classifier) means a saved artifact can score raw rows. The CV summary is a `.pkl` so the existing `models/*.pkl` ignore rule keeps it out of git.
@@ -19,7 +26,7 @@ stated reason.
 - **Decision:** Candidates are `DummyClassifier(strategy="most_frequent")`, Logistic Regression, Random Forest and XGBoost, with the previous hyperparameters unchanged. Each is scored with `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` on the 1,029 training rows. The headline is the best mean CV PR-AUC (average precision), tiebreak mean CV F1. The 441 test rows are used only for final reporting.
 - **Why:** Specified in the C4 plan: the test set must never be used for selection. The dummy model gives a no-skill floor to compare against.
 - **Alternatives considered:** Selecting on test metrics; ROC-AUC or F1 as the primary metric; hyperparameter tuning (out of scope for C4).
-- **Tradeoff accepted:** With the current data, XGBoost (CV PR-AUC 0.5776 ± 0.0555) beats Logistic Regression (0.5772 ± 0.0761) by 0.0004, well inside one standard deviation, so the headline choice is effectively a tie decided by noise. The tiebreak only applies to exact ties. Hyperparameters remain hand-picked.
+- **Tradeoff accepted:** With the current data, XGBoost (CV PR-AUC 0.5776 ± 0.0555) beats Logistic Regression (0.5772 ± 0.0761) by 0.0004, well inside one standard deviation, so the headline choice is effectively a tie decided by noise. The tiebreak only applies to exact ties. Hyperparameters remain hand-picked. The F1 tiebreak was specified for exact ties only, which made it ineffective here. Not changed after seeing test results, to avoid selecting on the test set.
 - **Source:** made-now
 
 ### 2026-10-27 — SHAP explainer chosen by headline model type
