@@ -59,8 +59,3 @@ flowchart TD
 5. → `scripts/generate_visuals.py:generate_correlation_heatmap` → `assets/correlation_heatmap.png`
 
 Each plot function calls `scripts/generate_visuals.py:set_dark_theme` first.
-
-## Not executed
-
-`sql/schema.sql` and `sql/employee_attrition_analysis.sql` are legacy
-reference files for an older two-table schema. No Python code calls them.

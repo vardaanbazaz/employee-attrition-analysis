@@ -46,14 +46,6 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Power BI temp files
-*.pbix.git
-*.pbit
-
-# Tableau temp files
-*.twb.git
-*.twb
-
 # Model artifacts
 models/*.pkl
 models/*.sav
