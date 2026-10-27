@@ -1,29 +1,54 @@
-# Enterprise Employee Attrition: ML Prediction & Diagnostic Pipeline
+# Employee Attrition: ML Prediction & SHAP Explainability
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?style=for-the-badge&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.12%2B-blue.svg?style=for-the-badge&logo=python&logoColor=white)
 ![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
 ![XGBoost](https://img.shields.io/badge/XGBoost-111111?style=for-the-badge&logo=xgboost&logoColor=white)
 ![SHAP](https://img.shields.io/badge/SHAP-Explainable%20AI-4B0082?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
 
-An enterprise-grade, end-to-end Machine Learning and Diagnostic Analytics platform designed to proactively identify employee flight risk, quantify compensation & workload friction points, and provide model transparency using **SHAP (SHapley Additive exPlanations)**.
+An employee attrition classifier trained on IBM's fictional HR Attrition dataset. It compares four models (a dummy baseline, Logistic Regression, Random Forest and XGBoost), selects one by cross-validated PR-AUC on the training split only, and explains the selected model with **SHAP (SHapley Additive exPlanations)**.
 
 ---
 
-## 📌 Executive Summary
+## 📌 Overview
 
-Employee turnover costs enterprises millions annually in lost productivity, onboarding overhead, and institutional knowledge drain. Traditional HR approaches rely on retrospective exit surveys after an employee has already resigned.
+* **Dataset**: 1,470 employee records; 35 columns, 30 raw features, 47 after encoding. 16.1% of employees left (`Attrition = Yes`).
+* **Split**: one stratified 70/30 split, 1,029 training rows and 441 test rows, `random_state=42` throughout.
+* **Class imbalance**: SMOTENC oversamples the minority class inside each training fit, taking the training set from 863 / 166 to 863 / 863 (retained / left). The test set is never resampled.
+* **Model selection**: stratified 5-fold cross-validation on the training split. The model with the best mean CV PR-AUC is the headline model (tiebreak: mean CV F1). The test set is used only for final reporting.
 
-This platform transitions workforce management from reactive tracking to **predictive intelligence**. Built as a modular Python ML engine, it ingests multi-source HR telemetry (demographics, compensation, performance, tenure), resolves class imbalance using **SMOTE**, trains gradient-boosted decision tree models (**XGBoost** & **Random Forest**), and decodes model decisions down to individual feature attributions via **SHAP**.
+---
 
-### Key Business Metrics & Machine Learning Pipeline Wins
-* **Dataset Scale**: Uses the IBM/Watson HR Employee Attrition dataset — **1,470 employee records** across 35 features. Target split: **83.88% retained / 16.12% attrition**. This is a small, well-known benchmark dataset, not a large-scale enterprise extract — see the Limitations note below.
-* **Class Imbalance Resolution**: Applied SMOTE oversampling to the training split, balancing it to **1,726 records** (863 / 863 per class).
-* **Baseline Performance (XGBoost)**: Accuracy 0.8549, Precision 0.60, Recall 0.2958, F1 0.3962, ROC-AUC 0.7592.
-* **Explainability Coverage**: Integrated 100% SHAP feature attribution mapping, translating black-box ML outputs into actionable retention levers for HR leadership.
+## 🎯 Results
+
+All numbers below come from [`assets/metrics.json`](assets/metrics.json), written by `src/evaluate.py`. Test metrics use the default 0.5 decision threshold.
+
+| Model | CV PR-AUC (mean ± std) | Test PR-AUC | Test F1 | Test ROC-AUC | Test Precision | Test Recall | Test Accuracy |
+|---|---|---|---|---|---|---|---|
+| Dummy (most frequent) | 0.161 ± 0.002 | 0.161 | 0.000 | 0.500 | 0.000 | 0.000 | 0.839 |
+| Logistic Regression | 0.577 ± 0.076 | 0.524 | 0.455 | 0.794 | 0.396 | 0.535 | 0.794 |
+| Random Forest | 0.544 ± 0.058 | 0.396 | 0.346 | 0.753 | 0.393 | 0.310 | 0.812 |
+| **XGBoost** (headline) | 0.578 ± 0.055 | 0.471 | 0.384 | 0.766 | 0.679 | 0.268 | 0.862 |
+
+Accuracy is misleading here: always predicting "stays" (the dummy model) already scores 83.9% on the test set.
+
+XGBoost was selected by the pre-declared rule (best mean CV PR-AUC), but it is statistically tied with Logistic Regression: their CV PR-AUC differs by 0.0003, far less than one standard deviation (0.055 and 0.076). At the 0.5 threshold they differ mainly in the precision/recall trade-off. On the test set XGBoost has precision 0.679 and recall 0.268, while Logistic Regression has precision 0.396 and recall 0.535. Logistic Regression also has the higher test PR-AUC (0.524 vs 0.471); the selection was made on CV PR-AUC, not on test results. Tuning the decision threshold is the next improvement.
+
+![ROC Curves](assets/roc_curves.png)
+
+![Precision-Recall Curves](assets/pr_curves.png)
+
+The dashed line in the PR plot is the test-set prevalence (0.161), which is also what the dummy model scores.
+
+![Confusion Matrix (XGBoost, test set)](assets/confusion_matrix.png)
 
 ### Limitations
-At 1,470 rows and a 16% positive class, the dataset is small for a gradient-boosted classifier, and post-SMOTE balancing works on synthetic minority samples rather than more real examples. This caps generalizability and shows up directly in the modest recall (0.2958) — the model misses most actual leavers. Treat this as a known tradeoff of dataset size and class imbalance, not a pipeline defect.
+* **Fictional data**: the dataset was created by IBM data scientists; findings describe this dataset, not real employees.
+* **Small sample**: 1,470 rows, with 71 leavers in the test set, so test metrics move noticeably with a few predictions.
+* **Tied models**: the XGBoost / Logistic Regression ranking is within CV noise (see above).
+* **Fixed hyperparameters**: no tuning was done for any model.
+* **Fixed threshold**: all test precision, recall, F1 and accuracy figures use a 0.5 threshold.
+* **Limited validation**: one held-out split plus 5-fold CV on the training rows; no repeated splits or external data.
 
 ---
 
@@ -35,115 +60,112 @@ At 1,470 rows and a 16% positive class, the dataset is small for a gradient-boos
 
 ---
 
-## 🏗️ Pipeline Architecture & Modular System Design (`src/`)
-
-The core repository architecture decouples the machine learning workflow into a modular, production-ready Python pipeline located in [`src/`](src/):
+## 🏗️ Pipeline (`src/`)
 
 ```
 src/
-├── data_ingestion.py      # Multi-source data ingestion, schema validation, & relational joins
-├── preprocessing.py       # Feature encoding, StandardScaler, & SMOTE class balancing
-├── train.py               # Classifier training (XGBoost, Random Forest, Logistic Regression) & pickle serialization
-└── evaluate.py            # Diagnostic evaluation reporting & SHAP explainability plot generation
+├── data_ingestion.py      # Loads the single source CSV
+├── preprocessing.py       # Cleaning, the fixed split, and the scale -> SMOTENC -> encode steps
+├── train.py               # 5-fold CV of all four models, headline selection, saves fitted pipelines
+└── evaluate.py            # Loads saved pipelines, test metrics, ROC/PR/confusion/SHAP plots, metrics.json
 ```
 
 ### 1. Data Ingestion ([`src/data_ingestion.py`](src/data_ingestion.py))
-* **Source**: Loads the IBM/Watson HR Employee Attrition dataset (`data/actual/WA_Fn-UseC_-HR-Employee-Attrition.csv`) — 1,470 rows, 35 columns.
-* **Data Hygiene**: Validates column schemas prior to downstream processing.
+* Loads `data/actual/WA_Fn-UseC_-HR-Employee-Attrition.csv` with `utf-8-sig` encoding (strips the file's BOM).
+* Checks that the file exists before reading it.
 
-### 2. Preprocessing & Imbalance Handling ([`src/preprocessing.py`](src/preprocessing.py))
-* **Feature Encoding**: Converts categorical string columns (`Department`, `JobRole`, `OverTime`, `BusinessTravel`, etc.) into model-ready integers using `LabelEncoder`.
-* **Feature Standardization**: Applies `StandardScaler` to ensure zero mean and unit variance across continuous numerical inputs (`MonthlyIncome`, `Age`, `YearsAtCompany`).
-* **SMOTE Oversampling**: Leverages `imbalanced-learn`'s Synthetic Minority Over-sampling Technique (SMOTE) on the training set to prevent model bias towards majority retained classes.
+### 2. Preprocessing ([`src/preprocessing.py`](src/preprocessing.py))
+* Drops `EmployeeNumber`, `EmployeeCount`, `StandardHours` and `Over18`, and maps `Attrition` Yes/No to 1/0.
+* Each model is wrapped in one `imblearn` `Pipeline`, fitted on training data only:
+  1. `StandardScaler` on the numeric columns.
+  2. `SMOTENC` while the categorical columns are still unencoded (runs during fitting only).
+  3. Categorical encoding: `BusinessTravel` as ordinal (Non-Travel=0, Travel_Rarely=1, Travel_Frequently=2); `Gender` and `OverTime` one-hot with `drop='if_binary'`; `Department`, `JobRole`, `MaritalStatus`, `EducationField` one-hot with `handle_unknown='ignore'`.
+  4. The classifier.
 
-### 3. Model Training & Serialization ([`src/train.py`](src/train.py))
-* **Classifier Suites**: Supports baseline Logistic Regression, Random Forest, and XGBoost hyperparameterized classifiers.
-* **Artifact Serialization**: Automatically exports fitted model binaries (`.pkl`) to `models/` for downstream inference services.
+### 3. Training ([`src/train.py`](src/train.py))
+* Cross-validates the dummy baseline, Logistic Regression, Random Forest and XGBoost with fixed hyperparameters.
+* Refits every pipeline on the full training split and saves it to `models/` with `joblib`, along with the CV summary.
 
-### 4. Evaluation & Diagnostic Diagnostics ([`src/evaluate.py`](src/evaluate.py))
-* **Metric Reporting**: Computes Precision, Recall, F1-Score, ROC-AUC, and Confusion Matrices on the held-out test split (`441 records`, 30% of the dataset).
-* **SHAP Integration**: Automatically triggers SHAP value calculation and summary plot generation.
+### 4. Evaluation ([`src/evaluate.py`](src/evaluate.py))
+* Loads the saved pipelines (no retraining; it tells you to run `train.py` first if they are missing).
+* Reports accuracy, precision, recall, F1, ROC-AUC and PR-AUC on the 441-row test split, writes `assets/metrics.json`, and draws the ROC, PR, confusion-matrix and SHAP plots.
 
 ---
 
-## 📊 Exploratory Data Analysis (EDA) & Dark-Mode Analytics
+## 📊 Exploratory Data Analysis
 
-Custom dark-mode visual telemetry generated programmatically using `pandas`, `matplotlib`, and `seaborn` ([`scripts/generate_visuals.py`](scripts/generate_visuals.py)):
+Plots generated by [`scripts/generate_visuals.py`](scripts/generate_visuals.py). Figures below are computed on all 1,470 rows.
 
-### 1. Departmental Attrition Diagnostics
+### 1. Attrition by Department
 ![Departmental Attrition Rate](assets/attrition_by_department.png)
-* **Insight**: Sales has the highest attrition rate at **20.6%** (92/446), HR next at **19.0%** (12/63), and Research & Development lowest at **13.8%** (133/961) — despite R&D carrying the largest headcount and the most absolute departures.
+* In this dataset, Sales has the highest attrition rate at 20.6% (92/446), Human Resources 19.0% (12/63), and Research & Development the lowest at 13.8% (133/961), although R&D has the most leavers in absolute terms.
 
----
-
-### 2. Compensation Density & Flight Risk Analysis
+### 2. Monthly Income vs Attrition
 ![Compensation Density vs Attrition Risk](assets/compensation_vs_attrition.png)
-* **Insight**: Kernel Density Estimation (KDE) plot comparing income distributions of retained vs. departed staff. Median monthly income for departed employees is **$3,202** vs. **$5,204** for retained employees.
+* In this dataset, the median monthly income of employees who left is 3,202, versus 5,204 for those who stayed.
+
+### 3. Correlation Heatmap
+![Numerical Feature Correlation Matrix](assets/correlation_heatmap.png)
+* Pearson correlations between 12 numeric features (age, income, tenure, satisfaction and related columns). The target (`Attrition`) is not included.
+
+### 4. Overtime
+* In this dataset, employees who work overtime left at 30.5% (127/416), versus 10.4% (110/1,054) for those who don't. There is no plot for this.
 
 ---
 
-### 3. Numerical Telemetry Correlation Matrix
-![Numerical Telemetry Correlation Matrix](assets/correlation_heatmap.png)
-* **Insight**: Multi-variable correlation heatmap isolating strong interactions between age, total working years, monthly income, salary hike percentage, and flight risk probability.
+## 🧠 Explainability (SHAP)
 
----
-
-## 🧠 Machine Learning Explainability (SHAP)
-
-To transition from "black-box" predictions to actionable business intelligence, the pipeline leverages **SHAP (SHapley Additive exPlanations)** based on cooperative game theory.
+SHAP values are computed for the headline model (XGBoost, via `TreeExplainer`) on the encoded test set.
 
 ![SHAP Feature Importance Summary Plot](assets/shap_summary.png)
 
-### Demystifying the "Black Box": Flight Risk Attribution
-The SHAP Summary Plot maps both the **magnitude** and **direction** of feature influences on the XGBoost classifier's flight risk predictions:
+In this dataset, the model relies most on these features, ranked by mean |SHAP value| (from `assets/metrics.json`):
 
-1. **OverTime (#1 Ranked Feature)**:
-   - The single strongest driver of predicted flight risk. Employees with `OverTime = Yes` attrite at **30.5%**, vs. **10.4%** for `OverTime = No` — roughly 3x the relative rate.
-2. **YearsWithCurrManager**:
-   - Ranked #2. Shorter relationships with the current manager push SHAP values toward higher churn probability.
-3. **StockOptionLevel**:
-   - Ranked #3. Lower stock option levels correlate with elevated flight risk.
-4. **MonthlyIncome**:
-   - Ranked #4. Lower monthly income pushes SHAP scores into the positive churn domain, consistent with the compensation gap seen in the KDE plot above.
-5. **NumCompaniesWorked**:
-   - Ranked #5. Prior job-hopping history contributes measurably to predicted risk.
+| Rank | Feature | Mean \|SHAP\| |
+|---|---|---|
+| 1 | OverTime_Yes | 0.807 |
+| 2 | StockOptionLevel | 0.771 |
+| 3 | YearsWithCurrManager | 0.513 |
+| 4 | NumCompaniesWorked | 0.467 |
+| 5 | MonthlyIncome | 0.450 |
+| 6 | WorkLifeBalance | 0.439 |
+| 7 | JobSatisfaction | 0.436 |
+| 8 | EnvironmentSatisfaction | 0.417 |
+| 9 | Age | 0.405 |
+| 10 | YearsSinceLastPromotion | 0.390 |
 
-By evaluating these individual Shapley attributions, HR leaders can understand *why* an employee is flagged as high-risk and implement targeted retention interventions (e.g., overtime caps or salary benchmarking) before an exit occurs.
+The plot above shows the direction of each feature's effect. These are associations the model learned from fictional data, not causes; they do not prove that changing a feature would change whether someone leaves.
 
 ---
 
-## 💻 Setup & Installation Guide
+## 💻 Setup
 
 ### Prerequisites
-* Python 3.10+
-* Virtual Environment (`venv` or `conda`)
+* Python 3.12+ (tested on 3.14.8)
+* A virtual environment (`venv` or `conda`)
 
 ### 1. Clone & Set Up Environment
 ```bash
-# Clone repository
 git clone https://github.com/vardaanbazaz/employee-attrition-analysis.git
 cd employee-attrition-analysis
 
-# Create and activate virtual environment
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Execute Modular ML Pipeline
+### 2. Train, then Evaluate
 ```bash
-# Run model training workflow
+# Cross-validate all models, pick the headline, save pipelines to models/
 python src/train.py
 
-# Run full evaluation, metric diagnostics, and SHAP plot generation
+# Load the saved pipelines, write assets/metrics.json and the result plots
 python src/evaluate.py
 ```
 
-### 3. Generate Analytics Visuals
+### 3. EDA Plots
 ```bash
-# Programmatically regenerate dark-mode EDA plots in assets/
 python scripts/generate_visuals.py
 ```
 
@@ -154,34 +176,47 @@ python scripts/generate_visuals.py
 ```
 employee-attrition-analysis/
 │
-├── README.md                          # Master project documentation
-├── requirements.txt                   # Production Python dependencies manifest
-├── pyrightconfig.json                 # Language server environment configuration
-├── LICENSE                            # MIT License
-├── .gitignore                         # Version control exclusions
+├── README.md
+├── requirements.txt                   # Exact pinned dependency versions
+├── pyrightconfig.json                 # Language server configuration
+├── LICENSE                            # MIT License (code only)
+├── .gitignore
+├── decisions.md                       # Log of technical decisions
+├── flow.md                            # Execution flow and call graph
 │
-├── src/                               # Modular Machine Learning Pipeline
-│   ├── data_ingestion.py              # Ingests & validates the source CSV
-│   ├── preprocessing.py               # Label encoding, scaling, & SMOTE oversampling
-│   ├── train.py                       # Fits XGBoost, Random Forest, & Logistic Regression
-│   └── evaluate.py                    # Metric diagnostics & SHAP explainability plot generator
+├── docs/
+│   └── business_problem.md            # Problem framing and project objectives
+│
+├── src/
+│   ├── data_ingestion.py              # Loads the source CSV
+│   ├── preprocessing.py               # Cleaning, split, scale -> SMOTENC -> encode steps
+│   ├── train.py                       # CV, headline selection, saves pipelines
+│   └── evaluate.py                    # Test metrics, plots, metrics.json
 │
 ├── scripts/
-│   └── generate_visuals.py            # Programmatic dark-mode analytics plot generator
+│   └── generate_visuals.py            # EDA plot generator
 │
 ├── assets/
-│   ├── shap_summary.png               # SHAP feature importance & flight risk summary plot
-│   ├── attrition_by_department.png    # Dark-mode departmental attrition rate bar chart
-│   ├── compensation_vs_attrition.png  # Dark-mode compensation KDE density plot
-│   └── correlation_heatmap.png        # Dark-mode numerical feature correlation matrix
+│   ├── metrics.json                   # CV and test metrics, headline model, top SHAP features
+│   ├── roc_curves.png                 # Test-set ROC curves, all models
+│   ├── pr_curves.png                  # Test-set precision-recall curves with prevalence line
+│   ├── confusion_matrix.png           # Headline model, test set
+│   ├── shap_summary.png               # SHAP summary plot, headline model
+│   ├── attrition_by_department.png    # EDA: attrition rate by department
+│   ├── compensation_vs_attrition.png  # EDA: monthly income density by attrition
+│   └── correlation_heatmap.png        # EDA: numeric feature correlations
 │
 ├── data/
 │   └── actual/
 │       ├── README.md                  # Dataset source & license
-│       └── WA_Fn-UseC_-HR-Employee-Attrition.csv # IBM/Watson HR Attrition dataset (1,470 rows, 35 cols)
+│       └── WA_Fn-UseC_-HR-Employee-Attrition.csv
 │
-└── models/                            # Serialized model binaries (.pkl)
-    └── xgboost_model.pkl
+└── models/                            # Gitignored; created by src/train.py
+    ├── dummy_pipeline.pkl
+    ├── logistic_regression_pipeline.pkl
+    ├── random_forest_pipeline.pkl
+    ├── xgboost_pipeline.pkl
+    └── cv_results.pkl
 ```
 
 ---

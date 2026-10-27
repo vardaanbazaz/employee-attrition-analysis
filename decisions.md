@@ -26,7 +26,7 @@ stated reason.
 - **Decision:** Candidates are `DummyClassifier(strategy="most_frequent")`, Logistic Regression, Random Forest and XGBoost, with the previous hyperparameters unchanged. Each is scored with `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` on the 1,029 training rows. The headline is the best mean CV PR-AUC (average precision), tiebreak mean CV F1. The 441 test rows are used only for final reporting.
 - **Why:** Specified in the C4 plan: the test set must never be used for selection. The dummy model gives a no-skill floor to compare against.
 - **Alternatives considered:** Selecting on test metrics; ROC-AUC or F1 as the primary metric; hyperparameter tuning (out of scope for C4).
-- **Tradeoff accepted:** With the current data, XGBoost (CV PR-AUC 0.5776 ± 0.0555) beats Logistic Regression (0.5772 ± 0.0761) by 0.0004, well inside one standard deviation, so the headline choice is effectively a tie decided by noise. The tiebreak only applies to exact ties. Hyperparameters remain hand-picked. The F1 tiebreak was specified for exact ties only, which made it ineffective here. Not changed after seeing test results, to avoid selecting on the test set.
+- **Tradeoff accepted:** With the current data, XGBoost (CV PR-AUC 0.5776 ± 0.0555) beats Logistic Regression (0.5772 ± 0.0761) by 0.0003, well inside one standard deviation, so the headline choice is effectively a tie decided by noise. Hyperparameters remain hand-picked. The F1 tiebreak was specified for exact ties only, which made it ineffective here. Not changed after seeing test results, to avoid selecting on the test set.
 - **Source:** made-now
 
 ### 2026-10-27 — SHAP explainer chosen by headline model type
