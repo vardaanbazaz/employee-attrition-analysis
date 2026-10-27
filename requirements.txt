@@ -1,18 +1,18 @@
+# Exact versions from the project .venv (Python 3.14.8), for the packages imported by src/ and scripts/
+
 # Core Data Processing & Analysis
-pandas>=2.0.0
-numpy>=1.24.0
-openpyxl>=3.1.0
+pandas==3.0.5
+numpy==2.5.2
 
 # Data Visualization & Graphics
-matplotlib>=3.7.0
-seaborn>=0.12.0
+matplotlib==3.11.1
+seaborn==0.13.2
 
 # Machine Learning & Imbalanced Data Handling
-scikit-learn>=1.2.0
-xgboost>=1.7.0
-imbalanced-learn>=0.10.0
-shap>=0.42.0
-
+scikit-learn==1.9.0
+xgboost==3.4.1
+imbalanced-learn==0.14.2
+shap==0.52.0
 
 # Serialization & Utilities
-joblib>=1.2.0
+joblib==1.5.3
