@@ -8,7 +8,15 @@ stated reason.
 
 ---
 
+### 2026-10-27 — Remove the legacy SQL files
+- **Decision:** Delete `sql/` (`schema.sql` and `employee_attrition_analysis.sql`) and its references in `README.md` and `flow.md`.
+- **Why:** Removed legacy SQL: queried the old HR_1/HR_2 tables, not the current dataset; redundant for the ML pipeline.
+- **Alternatives considered:** Keeping them labeled as legacy; rewriting them against the single-CSV schema.
+- **Tradeoff accepted:** The SQL work is only visible in git history.
+- **Source:** made-now
+
 ### 2026-10-27 — Keep the legacy SQL files, labeled as not wired in
+Superseded by Remove the legacy SQL files.
 - **Decision:** Keep `sql/schema.sql` and `sql/employee_attrition_analysis.sql` (a two-table `hr_1`/`hr_2` MySQL design), with header comments marking them legacy/illustrative and not used by `src/`.
 - **Why:** Likely: they show SQL work from the project's earlier BI-dashboard phase, and deleting them would lose that history from the visible repo.
 - **Alternatives considered:** Deleting them; rewriting them against the single-CSV schema.
@@ -89,5 +97,5 @@ stated reason.
 - **Decision:** The repository is licensed under MIT (`LICENSE`). Covers code written in this repo only. data/ is under ODbL 1.0 / DbCL 1.0.
 - **Why:** Likely: permissive, common default for portfolio and open-source code.
 - **Alternatives considered:** Apache-2.0; no license.
-- **Tradeoff accepted:** The license as written doesn't distinguish the code from the third-party dataset in `data/`.
+- **Tradeoff accepted:** The `LICENSE` file itself doesn't distinguish the code from the third-party dataset in `data/`; the split is stated in the README License section.
 - **Source:** inferred

@@ -6,8 +6,6 @@
 ![SHAP](https://img.shields.io/badge/SHAP-Explainable%20AI-4B0082?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
 
-> Originally derived from [bhanmrinal/Employee-Attrition-and-Churn-Analysis](https://github.com/bhanmrinal/Employee-Attrition-and-Churn-Analysis), a BI-dashboard project. This repo is a Python ML rebuild on a different dataset.
-
 An enterprise-grade, end-to-end Machine Learning and Diagnostic Analytics platform designed to proactively identify employee flight risk, quantify compensation & workload friction points, and provide model transparency using **SHAP (SHapley Additive exPlanations)**.
 
 ---
@@ -169,10 +167,6 @@ employee-attrition-analysis/
 │   ├── compensation_vs_attrition.png  # Dark-mode compensation KDE density plot
 │   └── correlation_heatmap.png        # Dark-mode numerical feature correlation matrix
 │
-├── sql/                                # Legacy/illustrative — predates the single-CSV pipeline, not wired into src/
-│   ├── schema.sql                     # DDL for a normalized two-table MySQL schema (hr_1/hr_2)
-│   └── employee_attrition_analysis.sql # Diagnostic query suite against that two-table schema
-│
 ├── data/
 │   └── actual/
 │       └── WA_Fn-UseC_-HR-Employee-Attrition.csv # IBM/Watson HR Attrition dataset (1,470 rows, 35 cols)
@@ -185,4 +179,6 @@ employee-attrition-analysis/
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for details.
+The code in this repository is distributed under the MIT License. See `LICENSE` for details.
+
+The MIT License covers code written in this repo only. The dataset in `data/` is not covered by it; it is under ODbL 1.0 / DbCL 1.0.
