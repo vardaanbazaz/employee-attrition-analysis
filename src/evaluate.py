@@ -249,6 +249,7 @@ def generate_shap_explainability(
     pipeline: Any,
     X_train: pd.DataFrame,
     X_test: pd.DataFrame,
+    model_name: str,
     output_path: str = os.path.join(ASSETS_DIR, "shap_summary.png"),
     max_samples: int = 500,
     top_n: int = 10,
@@ -263,6 +264,7 @@ def generate_shap_explainability(
         pipeline (Any): Fitted imblearn Pipeline (scale -> SMOTENC -> encode -> model).
         X_train (pd.DataFrame): Raw training features (LinearExplainer background).
         X_test (pd.DataFrame): Raw test features to explain.
+        model_name (str): MODEL_LABELS key of the explained model, used in the plot title.
         output_path (str): File destination path for SHAP plot artifact.
         max_samples (int): Sample size cap to accelerate SHAP computation.
         top_n (int): Number of top features to return.
@@ -312,8 +314,8 @@ def generate_shap_explainability(
             t.set_fontweight('bold')
 
     top3 = ", ".join(f["feature"] for f in top_features[:3])
-    fig.suptitle("SHAP Feature Importance & Flight Risk Summary Plot", fontsize=15, fontweight='bold', color=TEXT_COLOR, x=0.125, y=0.98, ha='left')
-    fig.text(0.125, 0.94, f"{explainer_name} on {type(model).__name__}, test set. Top drivers: {top3}", fontsize=10.5, color=MUTED_TEXT)
+    fig.suptitle(f"SHAP Summary — {MODEL_LABELS[model_name]} (test set)", fontsize=15, fontweight='bold', color=TEXT_COLOR, x=0.125, y=0.98, ha='left')
+    fig.text(0.125, 0.94, f"{explainer_name}, mean |SHAP| ranking. Top features: {top3}", fontsize=10.5, color=MUTED_TEXT)
 
     plt.tight_layout()
     plt.subplots_adjust(top=0.91)
@@ -364,7 +366,7 @@ def run_full_pipeline_evaluation(generate_shap: bool = True) -> Dict[str, Any]:
 
     top_features = []
     if generate_shap:
-        top_features = generate_shap_explainability(artifacts["models"][headline], X_train, X_test)
+        top_features = generate_shap_explainability(artifacts["models"][headline], X_train, X_test, headline)
 
     n_features = artifacts["models"][headline][:-1].transform(X_test.head(1)).shape[1]
     metrics = {
