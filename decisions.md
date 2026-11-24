@@ -89,7 +89,7 @@ Superseded by SHAP explainer chosen by headline model type.
 
 ### 2026-10-27 — joblib serialization of fitted models, not tracked in git
 Superseded by Persist full fitted pipelines; evaluate.py loads, never retrains.
-- **Decision:** Save the fitted classifier to `models/<model>_model.pkl`; `.gitignore` excludes `models/*.pkl` and `models/*.sav`. The old code (`ce4613e:src/train.py`) serialized with `pickle.dump`; `joblib.dump` replaced it in the 2026-10-27 pass (`c701c06`) and is what `src/train.py` uses now.
+- **Decision:** Save the fitted classifier to `models/<model>_model.pkl`; `.gitignore` excludes `models/*.pkl` and `models/*.sav`. The old code (`00a3a6f:src/train.py`) serialized with `pickle.dump`; `joblib.dump` replaced it in the 2026-10-27 pass (`243657c`) and is what `src/train.py` uses now.
 - **Why:** Likely: joblib is the standard scikit-learn persistence format, and binaries are regenerable so they don't belong in git.
 - **Alternatives considered:** Plain `pickle` (what the old code actually used; joblib came later); committing the model; ONNX or XGBoost's native JSON format.
 - **Tradeoff accepted:** Only the classifier is saved, not the fitted encoders or scaler, so the artifact cannot score raw rows on its own. Anyone cloning must retrain to get a model.
@@ -137,7 +137,7 @@ Superseded by imblearn Pipeline: scale numerics, SMOTENC, encode, model.
 
 ### 2026-10-27 — Single flat CSV (IBM HR Attrition), tracked in git
 - **Decision:** The pipeline reads one file, `data/actual/WA_Fn-UseC_-HR-Employee-Attrition.csv` (1,470 rows × 35 columns), with `encoding="utf-8-sig"` to strip the BOM. The CSV is committed to the repo.
-- **Why:** The previous HR_1/HR_2 data (50k rows, from the original BI-dashboard version) was synthetic and unrelated to the ML goal. Replaced with the IBM HR Attrition sample, which is also fictional (created by IBM data scientists) but is the standard public benchmark with clear licensing. CSV tracked in commit `8721910`; pipeline switched to it in commit `ec5b8a6`.
+- **Why:** The previous HR_1/HR_2 data (50k rows, from the original BI-dashboard version) was synthetic and unrelated to the ML goal. Replaced with the IBM HR Attrition sample, which is also fictional (created by IBM data scientists) but is the standard public benchmark with clear licensing. CSV tracked in commit `e306190`; pipeline switched to it in commit `e41ea88`.
 - **Alternatives considered:** The earlier two-table Excel source; downloading from Kaggle at runtime.
 - **Tradeoff accepted:** A small, fictional dataset limits how far any finding generalizes. Redistributing it requires following the dataset's own license.
 - **Source:** inferred
