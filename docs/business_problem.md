@@ -1,31 +1,21 @@
-# Business Problem: Employee Attrition & Retention
+# Business Problem: Employee Attrition
 
-## Executive Summary
-Employee attrition refers to the naturally occurring reduction of an organization's workforce when employees leave, retire, or resign and are not immediately replaced. High attrition can raise hiring and training costs, lose institutional knowledge, and affect team morale.
+## Question
+Which recorded attributes of an employee (overtime, tenure, income, satisfaction scores and so on) are associated with leaving a company, and how well can a standard classifier separate leavers from stayers on those attributes?
 
-This project treats attrition as a predictive intelligence problem rather than a retrospective reporting one. It uses a modular Python machine learning pipeline to ingest IBM's fictional HR dataset, compare four classifiers (a dummy baseline, Logistic Regression, Random Forest and XGBoost), select one by cross-validation, and decode individual predictions with **SHAP (SHapley Additive exPlanations)** — moving HR teams from reactive exit surveys toward proactive, targeted retention interventions.
+## Why it matters
+Turnover has direct costs (recruiting, training), indirect costs (extra load on the remaining team) and knowledge loss when people leave. An HR team that understands which patterns go with attrition can decide where to look more closely.
 
----
+## The data
+IBM's HR Analytics Employee Attrition dataset: 1,470 rows, 35 columns, **fictional**, created by IBM data scientists. It is not a record of real employees, so every finding describes this dataset only. About 16% of rows are leavers.
 
-## The Cost of Employee Attrition
-Employee turnover carries costs, which fall into:
-* **Direct Costs**: Recruitment advertising, agency fees, hiring manager time, signing bonuses, and structured training materials for new hires.
-* **Indirect Costs (Lost Productivity)**: Vacant roles mean other team members must assume extra workloads, causing burnout.
-* **Loss of Institutional Knowledge**: When skilled employees depart, they take vital context, client relationships, and workflow expertise with them.
+## What the project does
+* **Descriptive**: attrition rates by department and income, overtime split, numeric correlations (`scripts/generate_visuals.py`, figures in `assets/eda_stats.json`).
+* **Predictive**: compares a dummy baseline, Logistic Regression, Random Forest and XGBoost by 5-fold CV PR-AUC on the training split, then reports test-set results (`assets/metrics.json`).
+* **Explanatory**: SHAP values show which features the selected model relies on.
 
----
-
-## Core Project Objectives
-To address these challenges, this project seeks to answer several critical business questions:
-1. **What is the organization's baseline attrition rate?** How does it vary across departments and job roles?
-2. **What are the primary compensation-related attrition drivers?** Are employees leaving due to low monthly income or low daily rates?
-3. **How do working conditions affect retention?** Is there a quantifiable relationship between overtime work, tenure, manager stability, and flight risk?
-4. **Who are the high-risk employees?** Can individual employees be flagged for flight risk before they resign, with a transparent explanation of why?
-
----
-
-## Business Scope
-The scope of this project is focused on:
-* **Descriptive Analytics**: Exploratory data analysis (EDA) over historical employee records to determine *what happened* — attrition rates by department and compensation bracket.
-* **Diagnostic Analytics**: Using SHAP feature attribution to establish *why it happened* — for example, quantifying how overtime, low compensation, and short tenure push individual predictions toward higher flight risk.
-* **Predictive Intelligence**: Training classification models (Logistic Regression, Random Forest, XGBoost) that flag at-risk employees ahead of resignation, giving HR leadership an individual-level, explainable intervention window.
+## What the model can and cannot support
+* It can show which features the model uses and in which direction, on this dataset.
+* It cannot identify employees who will resign. At the 0.5 threshold the selected model finds a minority of leavers (test recall in `assets/metrics.json`), and the two best models are tied within CV noise.
+* SHAP shows associations the model learned, not causes. It does not show that changing a feature would change whether someone leaves.
+* It is a case study on fictional data, not a validated tool for real HR decisions.

@@ -11,6 +11,7 @@ matplotlib/seaborn aesthetic with a copper & teal color palette, and generates
 3. correlation_heatmap.png
 """
 
+import json
 import os
 import sys
 import numpy as np
@@ -298,6 +299,42 @@ def generate_correlation_heatmap(df):
     plt.close()
     print(f"Saved: {output_path}")
 
+def write_eda_stats(df, output_path=None):
+    """
+    Writes the EDA figures quoted in the README to assets/eda_stats.json:
+    attrition rate by department, median monthly income (left vs stayed),
+    and attrition rate by OverTime. Computed on all rows; no plots are drawn.
+    """
+    if output_path is None:
+        output_path = os.path.join(ASSETS_DIR, 'eda_stats.json')
+    left = df['Attrition'] == 'Yes'
+
+    def group_rates(column):
+        out = {}
+        for key, grp in df.groupby(column):
+            n_left = int((grp['Attrition'] == 'Yes').sum())
+            out[str(key)] = {
+                'left': n_left,
+                'total': int(len(grp)),
+                'rate_pct': round(100 * n_left / len(grp), 1),
+            }
+        return out
+
+    stats = {
+        'rows': int(len(df)),
+        'attrition_by_department': group_rates('Department'),
+        'median_monthly_income': {
+            'left': float(df.loc[left, 'MonthlyIncome'].median()),
+            'stayed': float(df.loc[~left, 'MonthlyIncome'].median()),
+        },
+        'attrition_by_overtime': group_rates('OverTime'),
+    }
+    with open(output_path, 'w') as f:
+        json.dump(stats, f, indent=2)
+        f.write('\n')
+    print(f"Saved: {output_path}")
+    return stats
+
 def main():
     print("=" * 60)
     print("Generating High-Resolution Dark Mode Analytics Visualizations")
@@ -314,6 +351,9 @@ def main():
     print("\n3. Generating Correlation Heatmap plot...")
     generate_correlation_heatmap(df)
     
+    print("\n4. Writing EDA stats...")
+    write_eda_stats(df)
+
     print("\n" + "=" * 60)
     print("All visualizations successfully generated and saved to assets/!")
     print("=" * 60)

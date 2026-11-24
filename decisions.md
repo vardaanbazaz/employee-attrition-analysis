@@ -8,37 +8,44 @@ stated reason.
 
 ---
 
+### 2026-11-24 — Write README EDA numbers to assets/eda_stats.json
+- **Decision:** `scripts/generate_visuals.py:write_eda_stats` computes department attrition rates, median monthly income (left vs stayed) and OverTime attrition rates, and writes them to `assets/eda_stats.json`. The README cites that file.
+- **Why:** The README quotes these figures but they were not traceable to a file, unlike the model numbers in `metrics.json`.
+- **Alternatives considered:** Reading numbers off the plots; a separate stats script.
+- **Tradeoff accepted:** The JSON is regenerated whenever `generate_visuals.py` runs; it is not tied to the PNGs beyond sharing the same code path.
+- **Source:** made-now
+
 ### 2026-10-27 — Pin requirements.txt to exact installed versions
 - **Decision:** `requirements.txt` pins the nine packages imported by `src/` and `scripts/` to the exact versions in the project `.venv` (`==`), taken from `pip freeze`. `openpyxl` is removed.
-- **Why:** Specified in the C3 plan. Results in `assets/metrics.json` were produced with these versions, and the code relies on recent APIs (for example SMOTENC taking column names). `openpyxl` was only needed for the old `HR_1.xlsx`/`HR_2.xlsx` source.
+- **Why:** Specified in the 2026-10-27 fix pass. Results in `assets/metrics.json` were produced with these versions, and the code relies on recent APIs (for example SMOTENC taking column names). `openpyxl` was only needed for the old `HR_1.xlsx`/`HR_2.xlsx` source.
 - **Alternatives considered:** Minimum-version ranges (`>=`), as before; a lock file with transitive dependencies.
 - **Tradeoff accepted:** Exact pins need manual bumps. Transitive dependencies are not pinned. The pins require Python >= 3.12 (numpy, xgboost and shap), and only Python 3.14.8 has been tested.
 - **Source:** made-now
 
 ### 2026-10-27 — Persist full fitted pipelines; evaluate.py loads, never retrains
 - **Decision:** `src/train.py` saves each fitted imblearn Pipeline (preprocessing + model) to `models/<name>_pipeline.pkl`, plus the CV summary to `models/cv_results.pkl`. `src/evaluate.py` loads them, raises `FileNotFoundError` ending "Run `python src/train.py` first." if any is missing, and writes `assets/metrics.json` plus `roc_curves.png`, `pr_curves.png`, `confusion_matrix.png` and `shap_summary.png`.
-- **Why:** Specified in the C4 plan: evaluation must not retrain. Saving the whole pipeline (not just the classifier) means a saved artifact can score raw rows. The CV summary is a `.pkl` so the existing `models/*.pkl` ignore rule keeps it out of git.
+- **Why:** Specified in the 2026-10-27 fix pass: evaluation must not retrain. Saving the whole pipeline (not just the classifier) means a saved artifact can score raw rows. The CV summary is a `.pkl` so the existing `models/*.pkl` ignore rule keeps it out of git.
 - **Alternatives considered:** Saving only the classifier (previous behavior); writing the CV summary as JSON in `models/` (would need a new ignore rule); recomputing CV inside `evaluate.py`.
 - **Tradeoff accepted:** `evaluate.py` depends on `train.py` having been run with the same code; stale `.pkl` files are not detected. `metrics.json` is tracked in git, the `.pkl` files are not.
 - **Source:** made-now
 
 ### 2026-10-27 — Select the headline model by 5-fold CV PR-AUC on the training split
-- **Decision:** Candidates are `DummyClassifier(strategy="most_frequent")`, Logistic Regression, Random Forest and XGBoost, with the previous hyperparameters unchanged. Each is scored with `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` on the 1,029 training rows. The headline is the best mean CV PR-AUC (average precision), tiebreak mean CV F1. The 441 test rows are used only for final reporting.
-- **Why:** Specified in the C4 plan: the test set must never be used for selection. The dummy model gives a no-skill floor to compare against.
-- **Alternatives considered:** Selecting on test metrics; ROC-AUC or F1 as the primary metric; hyperparameter tuning (out of scope for C4).
-- **Tradeoff accepted:** With the current data, XGBoost (CV PR-AUC 0.5776 ± 0.0555) beats Logistic Regression (0.5772 ± 0.0761) by 0.0003, well inside one standard deviation, so the headline choice is effectively a tie decided by noise. Hyperparameters remain hand-picked. The F1 tiebreak was specified for exact ties only, which made it ineffective here. Not changed after seeing test results, to avoid selecting on the test set.
+- **Decision:** Candidates are `DummyClassifier(strategy="most_frequent")`, Logistic Regression, Random Forest and XGBoost, with the previous hyperparameters unchanged. Each is scored with `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` on the 1,029 training rows. The headline is the best mean CV PR-AUC (average precision); mean CV F1 breaks exact ties only. The 441 test rows are used only for final reporting.
+- **Why:** Specified in the 2026-10-27 fix pass: the test set must never be used for selection. The dummy model gives a no-skill floor to compare against.
+- **Alternatives considered:** Selecting on test metrics; ROC-AUC or F1 as the primary metric; hyperparameter tuning (out of scope for the 2026-10-27 fix pass).
+- **Tradeoff accepted:** With the current data, XGBoost (CV PR-AUC 0.5776 ± 0.0555) beats Logistic Regression (0.5772 ± 0.0761) by 0.0003, well inside one standard deviation, so the headline choice is effectively a tie decided by noise. Hyperparameters remain hand-picked. The F1 tiebreak applies only to exactly equal mean PR-AUC, so it never activated: the 0.0003 gap is not a tie. It does not resolve near-ties. Not changed after seeing test results, to avoid selecting on the test set.
 - **Source:** made-now
 
 ### 2026-10-27 — SHAP explainer chosen by headline model type
 - **Decision:** SHAP runs on the headline pipeline's encoded test set: `shap.LinearExplainer` (background = encoded, non-resampled training set) for Logistic Regression, `shap.TreeExplainer(feature_perturbation="tree_path_dependent")` for Random Forest and XGBoost. Any subsampling uses `random_state=42`. The top 10 features by mean |SHAP| go into `metrics.json`, and the plot subtitle names the top three instead of a hard-coded list.
-- **Why:** Specified in the C4 plan, since the headline model is no longer fixed to a tree model.
+- **Why:** Specified in the 2026-10-27 fix pass, since the headline model is no longer fixed to a tree model.
 - **Alternatives considered:** KernelExplainer for every model (model-agnostic but slow).
 - **Tradeoff accepted:** No SHAP plot if the dummy model ever wins selection (raises `ValueError`).
 - **Source:** made-now
 
 ### 2026-10-27 — imblearn Pipeline: scale numerics, SMOTENC, encode, model
 - **Decision:** One imblearn `Pipeline` per model: `StandardScaler` on numeric columns only, then `SMOTENC(categorical_features=<7 categorical columns>, random_state=42)` while the categoricals are still strings, then categorical encoding, then the model. Every step is fitted on training folds only. Drops `EmployeeNumber`, `EmployeeCount`, `StandardHours`, `Over18`. Same 70/30 stratified split (1,029 / 441), `random_state=42` everywhere.
-- **Why:** Specified in the C4 plan. SMOTENC treats categoricals as categories, so resampling no longer creates fractional or invalid category values the way plain SMOTE on label codes did.
+- **Why:** Specified in the 2026-10-27 fix pass. SMOTENC treats categoricals as categories, so resampling no longer creates fractional or invalid category values the way plain SMOTE on label codes did.
 - **Alternatives considered:** Plain SMOTE after one-hot encoding (creates fractional dummy values); class weights instead of resampling.
 - **Tradeoff accepted:** `BusinessTravel` is ordinally encoded after scaling, so it stays on a 0–2 scale while the other numerics are standardized. The dummy model sees a balanced (863/863) training set, so "most frequent" resolves a tie to class 0.
 - **Source:** made-now

@@ -1,0 +1,36 @@
+{
+  "rows": 1470,
+  "attrition_by_department": {
+    "Human Resources": {
+      "left": 12,
+      "total": 63,
+      "rate_pct": 19.0
+    },
+    "Research & Development": {
+      "left": 133,
+      "total": 961,
+      "rate_pct": 13.8
+    },
+    "Sales": {
+      "left": 92,
+      "total": 446,
+      "rate_pct": 20.6
+    }
+  },
+  "median_monthly_income": {
+    "left": 3202.0,
+    "stayed": 5204.0
+  },
+  "attrition_by_overtime": {
+    "No": {
+      "left": 110,
+      "total": 1054,
+      "rate_pct": 10.4
+    },
+    "Yes": {
+      "left": 127,
+      "total": 416,
+      "rate_pct": 30.5
+    }
+  }
+}

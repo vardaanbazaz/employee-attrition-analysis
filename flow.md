@@ -12,7 +12,7 @@ All entry points are plain scripts run from the repo root with the project
 |---|---|---|
 | `python src/train.py` | `src/train.py:train_pipeline` | 5-fold CV of all four models on the training split, pick headline, refit and save every pipeline to `models/` |
 | `python src/evaluate.py` | `src/evaluate.py:run_full_pipeline_evaluation` | Load saved pipelines, score the test split, write `assets/metrics.json` and the ROC/PR/confusion/SHAP plots |
-| `python scripts/generate_visuals.py` | `scripts/generate_visuals.py:main` | Write the three EDA plots to `assets/` |
+| `python scripts/generate_visuals.py` | `scripts/generate_visuals.py:main` | Write the three EDA plots and `assets/eda_stats.json` to `assets/` |
 | `python src/preprocessing.py` | `__main__` block | Smoke test: split shapes, SMOTENC class counts, encoded feature count |
 | `python src/data_ingestion.py` | `__main__` block | Smoke test: print head and class counts |
 
@@ -82,5 +82,6 @@ flowchart TD
 3. → `scripts/generate_visuals.py:generate_attrition_by_department` → `assets/attrition_by_department.png`
 4. → `scripts/generate_visuals.py:generate_compensation_vs_attrition` → `assets/compensation_vs_attrition.png`
 5. → `scripts/generate_visuals.py:generate_correlation_heatmap` → `assets/correlation_heatmap.png`
+6. → `scripts/generate_visuals.py:write_eda_stats` → `assets/eda_stats.json` (department rates, median income, OverTime rates quoted in the README)
 
 Each plot function calls `scripts/generate_visuals.py:set_dark_theme` first.
