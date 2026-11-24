@@ -87,10 +87,10 @@ Superseded by SHAP explainer chosen by headline model type.
 - **Tradeoff accepted:** Only works for tree models; the subsample uses an unseeded `np.random.choice` (not hit at 441 test rows).
 - **Source:** inferred
 
-### 2026-10-27 — joblib serialization of fitted models, not tracked in git
+### 2026-10-27 — Replace pickle with joblib for fitted models, not tracked in git
 Superseded by Persist full fitted pipelines; evaluate.py loads, never retrains.
 - **Decision:** Save the fitted classifier to `models/<model>_model.pkl`; `.gitignore` excludes `models/*.pkl` and `models/*.sav`. The old code (`00a3a6f:src/train.py`) serialized with `pickle.dump`; `joblib.dump` replaced it in the 2026-10-27 pass (`243657c`) and is what `src/train.py` uses now.
-- **Why:** Likely: joblib is the standard scikit-learn persistence format, and binaries are regenerable so they don't belong in git.
+- **Why:** not recorded.
 - **Alternatives considered:** Plain `pickle` (what the old code actually used; joblib came later); committing the model; ONNX or XGBoost's native JSON format.
 - **Tradeoff accepted:** Only the classifier is saved, not the fitted encoders or scaler, so the artifact cannot score raw rows on its own. Anyone cloning must retrain to get a model.
 - **Source:** inferred
@@ -143,15 +143,15 @@ Superseded by imblearn Pipeline: scale numerics, SMOTENC, encode, model.
 - **Source:** inferred
 
 ### 2026-10-27 — Plain-script `src/` modules with a `sys.path` shim
-- **Decision:** Pipeline stages are separate modules in `src/` (`data_ingestion`, `preprocessing`, `train`, `evaluate`), each runnable as `python src/<module>.py`, each inserting the repo root into `sys.path` so `from src.x import y` works.
+- **Decision:** Pipeline stages are separate modules in `src/` (`data_ingestion`, `preprocessing`, `train`, `evaluate`), each runnable as `python src/<module>.py`. The `sys.path` shim (inserting the repo root so `from src.x import y` works) is in `train.py`, `preprocessing.py` and `evaluate.py`; `data_ingestion.py` does not have it.
 - **Why:** Likely: run each stage directly without packaging or installing the project.
 - **Alternatives considered:** An installable package (`pyproject.toml`) run with `python -m`; a single notebook.
-- **Tradeoff accepted:** `sys.path` manipulation in each file; no CLI or config layer.
+- **Tradeoff accepted:** `sys.path` manipulation in three of the four files; no CLI or config layer.
 - **Source:** inferred
 
 ### 2026-10-27 — MIT license
 - **Decision:** The repository is licensed under MIT (`LICENSE`). Covers code written in this repo only. data/ is under ODbL 1.0 / DbCL 1.0.
-- **Why:** Likely: permissive, common default for portfolio and open-source code.
+- **Why:** not recorded.
 - **Alternatives considered:** Apache-2.0; no license.
 - **Tradeoff accepted:** The `LICENSE` file itself doesn't distinguish the code from the third-party dataset in `data/`; the split is stated in the README License section.
 - **Source:** inferred

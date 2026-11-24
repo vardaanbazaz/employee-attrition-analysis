@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Data Ingestion Module for Employee Attrition & Predictive Analytics Platform.
+Data Ingestion Module for Employee Attrition Analysis.
 
 Handles reading and validating the raw HR telemetry dataset
 (WA_Fn-UseC_-HR-Employee-Attrition.csv — the IBM/Watson Analytics
