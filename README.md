@@ -251,4 +251,4 @@ The MIT License (see `LICENSE`) covers code written in this repo only; the datas
 
 ## Acknowledgments
 
-Started from [bhanmrinal/Employee-Attrition-and-Churn-Analysis](https://github.com/bhanmrinal/Employee-Attrition-and-Churn-Analysis). The data, pipeline, evaluation and analysis in this repo were rewritten since.
+Inspired by [bhanmrinal/Employee-Attrition-and-Churn-Analysis](https://github.com/bhanmrinal/Employee-Attrition-and-Churn-Analysis). No code from that repository is included here.
