@@ -101,7 +101,7 @@ def generate_attrition_by_department(df):
     
     # Custom X-axis bounds & grid
     max_val = dept_stats['attrition_rate'].max()
-    ax.set_xlim(0, max_val * 1.18)
+    ax.set_xlim(0, max_val * 1.55)
     ax.xaxis.set_major_formatter(ticker.PercentFormatter())
     ax.grid(True, axis='x', color=GRID_COLOR, linestyle='--', alpha=0.5)
     ax.set_axisbelow(True)
@@ -109,7 +109,9 @@ def generate_attrition_by_department(df):
     # Annotate bars with exact percentages and headcount breakdown
     for bar, rate, count, total in zip(bars, dept_stats['attrition_rate'], dept_stats['attrition_count'], dept_stats['total']):
         width = bar.get_width()
-        label_text = f" {rate:.1f}%  ({count:,} / {total:,})"
+        label_text = f" {rate:.1f}%  ({count:,} left of n={total:,})"
+        if total < 100:
+            label_text += " (small sample)"
         ax.text(
             width + 0.5, 
             bar.get_y() + bar.get_height() / 2, 
@@ -178,6 +180,8 @@ def generate_compensation_vs_attrition(df):
     # Formatting Axes
     ax.set_xlabel('Monthly Income', fontsize=11, fontweight='bold', color=MUTED_TEXT, labelpad=10)
     ax.set_ylabel('Density Distribution', fontsize=11, fontweight='bold', color=MUTED_TEXT, labelpad=10)
+    # Raw density values mean nothing to a reader: keep the axis label, hide the tick labels
+    ax.tick_params(axis='y', left=False, labelleft=False)
     ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"{x/1000:g}k" if x >= 1000 else f"{x:g}"))
     
     # Calculate medians for annotations
@@ -188,8 +192,12 @@ def generate_compensation_vs_attrition(df):
     ax.axvline(median_stay, color=TEAL_PRIMARY, linestyle=':', linewidth=1.5, alpha=0.8)
     ax.axvline(median_leave, color=COPPER_PRIMARY, linestyle=':', linewidth=1.5, alpha=0.8)
     
-    ax.text(median_stay + 1000, ax.get_ylim()[1] * 0.75, f'Median Stayed: {median_stay:,.0f}', color=TEAL_PRIMARY, fontsize=9.5, fontweight='bold')
-    ax.text(median_leave + 1000, ax.get_ylim()[1] * 0.55, f'Median Departed: {median_leave:,.0f}', color=COPPER_PRIMARY, fontsize=9.5, fontweight='bold')
+    # Headroom above both curves, so the labels sit clear of the curves and the dotted lines:
+    # Departed to the left of its line, Stayed to the right of its line.
+    y_top = ax.get_ylim()[1] * 1.25
+    ax.set_ylim(0, y_top)
+    ax.text(median_leave - 250, y_top * 0.94, f'Median Departed: {median_leave:,.0f}', color=COPPER_PRIMARY, fontsize=9.5, fontweight='bold', ha='right', va='top')
+    ax.text(median_stay + 250, y_top * 0.94, f'Median Stayed: {median_stay:,.0f}', color=TEAL_PRIMARY, fontsize=9.5, fontweight='bold', ha='left', va='top')
 
     # Legend
     legend = ax.legend(

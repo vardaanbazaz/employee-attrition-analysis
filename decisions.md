@@ -89,9 +89,9 @@ Superseded by SHAP explainer chosen by headline model type.
 
 ### 2026-10-27 — joblib serialization of fitted models, not tracked in git
 Superseded by Persist full fitted pipelines; evaluate.py loads, never retrains.
-- **Decision:** Save the fitted classifier with `joblib.dump` to `models/<model>_model.pkl`; `.gitignore` excludes `models/*.pkl` and `models/*.sav`.
+- **Decision:** Save the fitted classifier to `models/<model>_model.pkl`; `.gitignore` excludes `models/*.pkl` and `models/*.sav`. The old code (`ce4613e:src/train.py`) serialized with `pickle.dump`; `joblib.dump` replaced it in the 2026-10-27 pass (`c701c06`) and is what `src/train.py` uses now.
 - **Why:** Likely: joblib is the standard scikit-learn persistence format, and binaries are regenerable so they don't belong in git.
-- **Alternatives considered:** Plain `pickle`; committing the model; ONNX or XGBoost's native JSON format.
+- **Alternatives considered:** Plain `pickle` (what the old code actually used; joblib came later); committing the model; ONNX or XGBoost's native JSON format.
 - **Tradeoff accepted:** Only the classifier is saved, not the fitted encoders or scaler, so the artifact cannot score raw rows on its own. Anyone cloning must retrain to get a model.
 - **Source:** inferred
 

@@ -197,9 +197,7 @@ def plot_pr_curves(
     fig, ax = plt.subplots(figsize=(8, 6.5))
     fig.patch.set_facecolor(BG_COLOR)
     _style_axes(ax)
-    baseline_label = f"Prevalence ({prevalence:.3f})"
-    if "dummy" in probs:
-        baseline_label += f" = {MODEL_LABELS['dummy']} (AP {average_precision_score(y_test, probs['dummy']):.3f})"
+    baseline_label = f"No-skill baseline (prevalence {prevalence:.3f})"
     ax.axhline(prevalence, linestyle="--", color=MUTED_TEXT, linewidth=1.5, label=baseline_label)
     for name, y_prob in probs.items():
         if name == "dummy":
