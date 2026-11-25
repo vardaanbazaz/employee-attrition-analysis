@@ -50,7 +50,7 @@ Built by `src/train.py:build_pipeline` from `src/preprocessing.py:build_preproce
 2. → `src/evaluate.py:load_artifacts`: `joblib.load` of `models/cv_results.pkl` and the four `models/*_pipeline.pkl`
 3. → `src/preprocessing.py:load_split` (same split as training)
 4. → `src/evaluate.py:evaluate_model` for each pipeline: test accuracy, precision, recall, F1, ROC-AUC, PR-AUC, confusion matrix
-5. → `src/evaluate.py:plot_roc_curves` → `assets/roc_curves.png`
+5. → `src/evaluate.py:plot_roc_curves` → `assets/roc_curves.png` (each plot function first calls `src/palette.py:apply_theme`)
 6. → `src/evaluate.py:plot_pr_curves` → `assets/pr_curves.png`
 7. → `src/evaluate.py:plot_confusion_matrix` (headline) → `assets/confusion_matrix.png`
 8. → `src/evaluate.py:generate_shap_explainability` (headline; `LinearExplainer` or `TreeExplainer`) → `assets/shap_summary.png`
@@ -84,4 +84,11 @@ flowchart TD
 5. → `scripts/generate_visuals.py:generate_correlation_heatmap` → `assets/correlation_heatmap.png`
 6. → `scripts/generate_visuals.py:write_eda_stats` → `assets/eda_stats.json` (department rates, median income, OverTime rates quoted in the README)
 
-Each plot function calls `scripts/generate_visuals.py:set_dark_theme` first.
+Each plot function calls `scripts/generate_visuals.py:set_theme` first, which calls `src/palette.py:apply_theme` (shared rcParams) and then sets the font stack. The heatmap colours its cell text with `src/palette.py:text_color_for`.
+
+## Shared palette: `src/palette.py`
+
+Not an entry point. It holds the colour constants and colormaps for every figure in `assets/`. It is imported by `scripts/generate_visuals.py` and `src/evaluate.py` (both reach it through the repo-root `sys.path` shim).
+
+- `src/palette.py:apply_theme`: called by `scripts/generate_visuals.py:set_theme`, `src/evaluate.py:plot_roc_curves`, `plot_pr_curves`, `plot_confusion_matrix` and `generate_shap_explainability`
+- `src/palette.py:text_color_for`: called by `src/evaluate.py:plot_confusion_matrix` and `scripts/generate_visuals.py:generate_correlation_heatmap`

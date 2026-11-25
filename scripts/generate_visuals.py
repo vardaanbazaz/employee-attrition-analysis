@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Generate Custom Dark-Mode Analytics Visuals for Employee Attrition Analysis.
+Generate EDA Visuals for Employee Attrition Analysis.
 
 This script loads the raw HR dataset (data/actual/WA_Fn-UseC_-HR-Employee-
-Attrition.csv) via src.data_ingestion, configures a premium dark-mode
-matplotlib/seaborn aesthetic with a copper & teal color palette, and generates
+Attrition.csv) via src.data_ingestion, applies the matte earth palette from
+src.palette (matching the portfolio site), and generates
 3 high-resolution plots saved to assets/:
 1. attrition_by_department.png
 2. compensation_vs_attrition.png
@@ -21,42 +21,21 @@ import seaborn as sns
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.data_ingestion import ingest_data
+from src.palette import (
+    BACKGROUND, TEXT, MUTED_TEXT, GRID, REFERENCE,
+    LEFT_COLOR, STAYED_COLOR, DIVERGING_CMAP, apply_theme, text_color_for,
+)
 
 # Ensure assets directory exists
 ASSETS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'assets'))
 os.makedirs(ASSETS_DIR, exist_ok=True)
 
-# Define Dark Mode & Color Palette Constants
-BG_COLOR = "#0B0F19"         # Deep Slate / Midnight Navy
-CARD_BG = "#111827"          # Slightly lighter panel background
-TEXT_COLOR = "#F8FAFC"       # High contrast off-white text
-MUTED_TEXT = "#94A3B8"       # Muted slate text
-GRID_COLOR = "#1E293B"       # Subtle grid line color
-
-# Brand Palette: Copper & Teal
-TEAL_PRIMARY = "#14B8A6"     # Bright Teal (Retained / Positive / Low Risk)
-TEAL_SECONDARY = "#0D9488"   # Darker Teal
-COPPER_PRIMARY = "#F97316"   # Vibrant Copper / Amber (Attrition / High Risk)
-COPPER_SECONDARY = "#C2410C" # Darker Copper
-
-def set_dark_theme():
-    """Configures global matplotlib parameters for a premium Dark Mode aesthetic."""
+def set_theme():
+    """Applies the shared matte earth rcParams, then this script's font stack (unchanged)."""
+    apply_theme()
     plt.rcParams.update({
-        'figure.facecolor': BG_COLOR,
-        'axes.facecolor': BG_COLOR,
-        'savefig.facecolor': BG_COLOR,
-        'savefig.edgecolor': 'none',
-        'text.color': TEXT_COLOR,
-        'axes.labelcolor': TEXT_COLOR,
-        'xtick.color': MUTED_TEXT,
-        'ytick.color': MUTED_TEXT,
-        'grid.color': GRID_COLOR,
-        'grid.linestyle': '--',
-        'grid.alpha': 0.4,
         'font.sans-serif': ['DejaVu Sans', 'Arial', 'Helvetica', 'sans-serif'],
         'font.family': 'sans-serif',
-        'axes.edgecolor': GRID_COLOR,
-        'axes.linewidth': 0.8,
     })
 
 def load_data():
@@ -65,7 +44,7 @@ def load_data():
 
 def generate_attrition_by_department(df):
     """Generates a stylized horizontal bar chart of Attrition Rate (%) by Department."""
-    set_dark_theme()
+    set_theme()
     
     # Calculate Attrition Rate and Total Count per Department
     dept_stats = df.groupby('Department').agg(
@@ -77,33 +56,30 @@ def generate_attrition_by_department(df):
     dept_stats = dept_stats.sort_values(by='attrition_rate', ascending=True)
     
     fig, ax = plt.subplots(figsize=(11, 6.5), dpi=300)
-    fig.patch.set_facecolor(BG_COLOR)
-    ax.set_facecolor(BG_COLOR)
     
     y_positions = np.arange(len(dept_stats))
     bars = ax.barh(
         y_positions, 
         dept_stats['attrition_rate'], 
         height=0.55, 
-        color=COPPER_PRIMARY, 
-        edgecolor='none',
-        alpha=0.9
+        color=LEFT_COLOR, 
+        edgecolor='none' 
     )
     
     # Remove top/right/left spines for clean minimalist layout
     for spine in ['top', 'right', 'left']:
         ax.spines[spine].set_visible(False)
-    ax.spines['bottom'].set_color(GRID_COLOR)
+    ax.spines['bottom'].set_color(REFERENCE)
     
     ax.set_yticks(y_positions)
-    ax.set_yticklabels(dept_stats['Department'], fontsize=11, fontweight='bold', color=TEXT_COLOR)
+    ax.set_yticklabels(dept_stats['Department'], fontsize=11, fontweight='bold', color=TEXT)
     ax.set_xlabel('Attrition Rate (%)', fontsize=11, fontweight='bold', color=MUTED_TEXT, labelpad=10)
     
     # Custom X-axis bounds & grid
     max_val = dept_stats['attrition_rate'].max()
     ax.set_xlim(0, max_val * 1.55)
     ax.xaxis.set_major_formatter(ticker.PercentFormatter())
-    ax.grid(True, axis='x', color=GRID_COLOR, linestyle='--', alpha=0.5)
+    ax.grid(True, axis='x')
     ax.set_axisbelow(True)
     
     # Annotate bars with exact percentages and headcount breakdown
@@ -120,11 +96,11 @@ def generate_attrition_by_department(df):
             ha='left', 
             fontsize=10, 
             fontweight='bold', 
-            color=COPPER_PRIMARY
+            color=TEXT
         )
         
     # Title & Subtitle without overlapping
-    fig.suptitle('Employee Attrition Rate by Department', fontsize=16, fontweight='bold', color=TEXT_COLOR, x=0.125, y=0.96, ha='left')
+    fig.suptitle('Employee Attrition Rate by Department', fontsize=16, fontweight='bold', color=TEXT, x=0.125, y=0.96, ha='left')
     ax.set_title('Share of employees who left, by department (in this dataset)', fontsize=11, color=MUTED_TEXT, pad=15, loc='left')
     
     plt.tight_layout()
@@ -137,19 +113,17 @@ def generate_attrition_by_department(df):
 
 def generate_compensation_vs_attrition(df):
     """Generates a KDE density plot comparing Monthly Income distribution for Attrition Yes vs No."""
-    set_dark_theme()
+    set_theme()
     
     fig, ax = plt.subplots(figsize=(11, 6.5), dpi=300)
-    fig.patch.set_facecolor(BG_COLOR)
-    ax.set_facecolor(BG_COLOR)
     
     # KDE Plot for Retained vs Departed
     sns.kdeplot(
         data=df[df['Attrition'] == 'No'],
         x='MonthlyIncome',
         fill=True,
-        color=TEAL_PRIMARY,
-        alpha=0.35,
+        color=STAYED_COLOR,
+        alpha=0.25,
         linewidth=2,
         cut=0,
         label='Stayed (Retained)',
@@ -160,8 +134,9 @@ def generate_compensation_vs_attrition(df):
         data=df[df['Attrition'] == 'Yes'],
         x='MonthlyIncome',
         fill=True,
-        color=COPPER_PRIMARY,
-        alpha=0.45,
+        color=LEFT_COLOR,
+        alpha=0.25,
+        linestyle='--',
         linewidth=2,
         cut=0,
         label='Departed (Attrition)',
@@ -169,12 +144,7 @@ def generate_compensation_vs_attrition(df):
     )
     
     # Spines & Grid
-    for spine in ['top', 'right']:
-        ax.spines[spine].set_visible(False)
-    for spine in ['left', 'bottom']:
-        ax.spines[spine].set_color(GRID_COLOR)
-        
-    ax.grid(True, color=GRID_COLOR, linestyle='--', alpha=0.5)
+    ax.grid(True)
     ax.set_axisbelow(True)
     
     # Formatting Axes
@@ -188,30 +158,27 @@ def generate_compensation_vs_attrition(df):
     median_stay = df[df['Attrition'] == 'No']['MonthlyIncome'].median()
     median_leave = df[df['Attrition'] == 'Yes']['MonthlyIncome'].median()
     
-    # Vertical line indicators for medians
-    ax.axvline(median_stay, color=TEAL_PRIMARY, linestyle=':', linewidth=1.5, alpha=0.8)
-    ax.axvline(median_leave, color=COPPER_PRIMARY, linestyle=':', linewidth=1.5, alpha=0.8)
-    
-    # Headroom above both curves, so the labels sit clear of the curves and the dotted lines:
-    # Departed to the left of its line, Stayed to the right of its line.
+    # Vertical line indicators for medians, stopping short of the label rows above them
+    ax.axvline(median_stay, ymax=0.91, color=STAYED_COLOR, linestyle=':', linewidth=1.5)
+    ax.axvline(median_leave, ymax=0.85, color=LEFT_COLOR, linestyle=':', linewidth=1.5)
+
+    # Headroom above both curves; each label is centred on the end of its own line,
+    # on its own row, so neither label crosses a line, a curve or the y-axis.
     y_top = ax.get_ylim()[1] * 1.25
     ax.set_ylim(0, y_top)
-    ax.text(median_leave - 250, y_top * 0.94, f'Median Departed: {median_leave:,.0f}', color=COPPER_PRIMARY, fontsize=9.5, fontweight='bold', ha='right', va='top')
-    ax.text(median_stay + 250, y_top * 0.94, f'Median Stayed: {median_stay:,.0f}', color=TEAL_PRIMARY, fontsize=9.5, fontweight='bold', ha='left', va='top')
+    ax.text(median_leave, y_top * 0.86, f'Median Departed: {median_leave:,.0f}', color=LEFT_COLOR, fontsize=9.5, fontweight='bold', ha='center', va='bottom')
+    ax.text(median_stay, y_top * 0.92, f'Median Stayed: {median_stay:,.0f}', color=STAYED_COLOR, fontsize=9.5, fontweight='bold', ha='center', va='bottom')
 
     # Legend
     legend = ax.legend(
-        facecolor=CARD_BG, 
-        edgecolor=GRID_COLOR, 
         fontsize=10, 
-        labelcolor=TEXT_COLOR, 
         loc='upper right',
         framealpha=0.9
     )
     legend.get_frame().set_linewidth(0.8)
     
     # Title & Subtitle without overlapping
-    fig.suptitle('Monthly Income by Attrition Status', fontsize=16, fontweight='bold', color=TEXT_COLOR, x=0.125, y=0.96, ha='left')
+    fig.suptitle('Monthly Income by Attrition Status', fontsize=16, fontweight='bold', color=TEXT, x=0.125, y=0.96, ha='left')
     ax.set_title('Density of monthly income for employees who stayed vs. left (in this dataset)', fontsize=11, color=MUTED_TEXT, pad=15, loc='left')
     
     plt.tight_layout()
@@ -224,7 +191,7 @@ def generate_compensation_vs_attrition(df):
 
 def generate_correlation_heatmap(df):
     """Generates a sleek correlation matrix heatmap of numeric HR variables."""
-    set_dark_theme()
+    set_theme()
     
     # Select key numerical features
     num_cols = [
@@ -257,11 +224,7 @@ def generate_correlation_heatmap(df):
     renamed_corr = corr_matrix.rename(index=label_map, columns=label_map)
     
     fig, ax = plt.subplots(figsize=(11, 9.5), dpi=300)
-    fig.patch.set_facecolor(BG_COLOR)
-    ax.set_facecolor(BG_COLOR)
     
-    # Custom Diverging Palette (Teal -> Deep Dark Navy -> Copper)
-    custom_cmap = sns.diverging_palette(175, 25, s=85, l=55, as_cmap=True, center="dark")
     
     # Create mask for upper triangle for clean matrix view
     mask = np.triu(np.ones_like(renamed_corr, dtype=bool))
@@ -269,7 +232,7 @@ def generate_correlation_heatmap(df):
     sns.heatmap(
         renamed_corr, 
         mask=mask,
-        cmap=custom_cmap, 
+        cmap=DIVERGING_CMAP, 
         vmax=1.0, 
         vmin=-0.2, 
         center=0,
@@ -277,18 +240,23 @@ def generate_correlation_heatmap(df):
         fmt=".2f", 
         square=True, 
         linewidths=0.8, 
-        linecolor=BG_COLOR,
+        linecolor=BACKGROUND,
         cbar_kws={"shrink": .8, "label": "Pearson Correlation Coefficient"},
-        annot_kws={"size": 8.5, "weight": "bold", "color": TEXT_COLOR},
+        annot_kws={"size": 8.5, "weight": "bold"},
         ax=ax
     )
     
+    # Annotation colour chosen per cell by luminance of the cell fill
+    mesh = ax.collections[0]
+    for text in ax.texts:
+        text.set_color(text_color_for(mesh.cmap(mesh.norm(float(text.get_text())))))
+
     # Style colorbar text
-    cbar = ax.collections[0].colorbar
+    cbar = mesh.colorbar
     cbar.ax.yaxis.label.set_color(MUTED_TEXT)
     cbar.ax.yaxis.label.set_fontsize(10)
     cbar.ax.tick_params(colors=MUTED_TEXT, labelsize=9)
-    cbar.outline.set_edgecolor(GRID_COLOR)
+    cbar.outline.set_edgecolor(GRID)
     cbar.outline.set_linewidth(0.8)
     
     # Format labels
@@ -296,7 +264,7 @@ def generate_correlation_heatmap(df):
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=9.5, fontweight='bold', color=MUTED_TEXT)
     
     # Title & Subtitle without overlapping
-    fig.suptitle('Correlation Matrix of Numeric HR Features', fontsize=16, fontweight='bold', color=TEXT_COLOR, x=0.125, y=0.96, ha='left')
+    fig.suptitle('Correlation Matrix of Numeric HR Features', fontsize=16, fontweight='bold', color=TEXT, x=0.125, y=0.96, ha='left')
     ax.set_title('Pearson correlations between 12 numeric features; Attrition is not included', fontsize=11, color=MUTED_TEXT, pad=15, loc='left')
     
     plt.tight_layout()
@@ -345,7 +313,7 @@ def write_eda_stats(df, output_path=None):
 
 def main():
     print("=" * 60)
-    print("Generating High-Resolution Dark Mode Analytics Visualizations")
+    print("Generating High-Resolution EDA Visualizations")
     print("=" * 60)
     
     df = load_data()

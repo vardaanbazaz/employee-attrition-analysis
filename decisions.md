@@ -8,6 +8,13 @@ stated reason.
 
 ---
 
+### 2026-11-25 — Matte earth palette matching the portfolio site
+- **Decision:** All figures in `assets/` use a light, matte earth palette defined once in `src/palette.py` and imported by `scripts/generate_visuals.py` and `src/evaluate.py`. Background `#F1F0EB`, text `#2B2A27`, muted text `#6B6A64`, grid `#D5D2C9` (thin, dashed), reference lines and spines `#7A786F`, no top or right spine. Left/attrition is rust `#A4573B`, stayed is deep teal `#265252`, and the headline model (XGBoost) is charcoal `#3A3935` with a thicker line. The other models use moss `#546131` and ochre `#9C7A26`. Diverging (heatmap) runs `#3F6B6B` to linen to rust, sequential (confusion matrix) runs linen to rust, and SHAP runs `#3F6B6B` to `#D5D2C9` to rust. Heatmap and confusion-matrix cell text is picked by cell luminance (`src/palette.py:text_color_for`), choosing between linen and a cell ink `#22221F`. The cell ink is `#2B2A27` darkened minimally, because with `#2B2A27` the 0.71–0.77 heatmap cells reached only 4.05–4.45:1. Every cell now reaches at least 4.5:1. shap's own x=0 line is recoloured to `#7A786F`.
+- **Why:** The user stated the figures should match the portfolio site.
+- **Alternatives considered:** Keeping the dark copper & teal theme. Using the requested series hexes exactly (`#3F6B6B`, `#5E6B3A`, `#967420`): rejected because three of them sit at L* 42–51 and look the same in greyscale. With the user's approval, only their CIELAB lightness was shifted to `#265252`, `#546131` and `#9C7A26`, spacing the five series at L* ≈ 24/32/39/46/53.
+- **Tradeoff accepted:** The muted hues are low-chroma, and some pairs fail the dataviz CVD check (for example rust vs moss under protanopia). Identity therefore also comes from line style, line width and the legend: every model has its own dash pattern, and Departed is drawn dashed. The grid and the light colormap stops are under 3:1 against the background on purpose, as non-data elements (approved by the user).
+- **Source:** made-now
+
 ### 2026-11-24 — Write README EDA numbers to assets/eda_stats.json
 - **Decision:** `scripts/generate_visuals.py:write_eda_stats` computes department attrition rates, median monthly income (left vs stayed) and OverTime attrition rates, and writes them to `assets/eda_stats.json`. The README cites that file.
 - **Why:** The README quotes these figures but they were not traceable to a file, unlike the model numbers in `metrics.json`.
@@ -73,6 +80,7 @@ Superseded by Remove the legacy SQL files.
 - **Source:** inferred
 
 ### 2026-10-27 — Dark "copper & teal" matplotlib style for all plots
+Superseded by Matte earth palette matching the portfolio site.
 - **Decision:** All figures use a dark background (`#0B0F19`) with teal (`#14B8A6`) for retained and copper (`#F97316`) for attrition, set through `rcParams` in `scripts/generate_visuals.py` and through hard-coded constants in `src/evaluate.py`.
 - **Why:** Likely: a consistent visual identity for README and portfolio display.
 - **Alternatives considered:** Default matplotlib/seaborn themes.

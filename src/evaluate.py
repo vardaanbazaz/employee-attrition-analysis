@@ -8,7 +8,6 @@ from typing import Dict, Any, List
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
 import shap
 
 from sklearn.ensemble import RandomForestClassifier
@@ -27,26 +26,30 @@ from sklearn.metrics import (
 )
 from xgboost import XGBClassifier
 
+from src.palette import (
+    BACKGROUND, TEXT, MUTED_TEXT, REFERENCE, REFERENCE_LINESTYLE,
+    CHARCOAL, DEEP_TEAL, MOSS, OCHRE, HEADLINE_LINEWIDTH, SERIES_LINEWIDTH,
+    SEQUENTIAL_CMAP, SHAP_CMAP, apply_theme, text_color_for,
+)
 from src.preprocessing import RANDOM_STATE, load_split
 from src.train import CV_RESULTS_PATH, MODEL_NAMES, model_path
 
 ASSETS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets"))
 METRICS_PATH = os.path.join(ASSETS_DIR, "metrics.json")
 
-# Dark-mode aesthetic (matches scripts/generate_visuals.py)
-BG_COLOR = "#0B0F19"
-TEXT_COLOR = "#F8FAFC"
-MUTED_TEXT = "#94A3B8"
-GRID_COLOR = "#1E293B"
-TEAL_PRIMARY = "#14B8A6"
-COPPER_PRIMARY = "#F97316"
-VIOLET_ACCENT = "#A78BFA"
-
+# Colour, width and dash per model: identity never rests on colour alone.
+# The headline model (XGBoost) is charcoal and thicker.
 MODEL_COLORS = {
-    "dummy": MUTED_TEXT,
-    "logistic_regression": TEAL_PRIMARY,
-    "random_forest": VIOLET_ACCENT,
-    "xgboost": COPPER_PRIMARY,
+    "dummy": OCHRE,
+    "logistic_regression": DEEP_TEAL,
+    "random_forest": MOSS,
+    "xgboost": CHARCOAL,
+}
+MODEL_LINESTYLES = {
+    "dummy": (0, (1, 1.5)),
+    "logistic_regression": "-.",
+    "random_forest": (0, (8, 2)),
+    "xgboost": "-",
 }
 MODEL_LABELS = {
     "dummy": "Dummy (most frequent)",
@@ -136,29 +139,32 @@ def evaluate_model(
 
 
 def _style_axes(ax: plt.Axes) -> None:
-    ax.set_facecolor(BG_COLOR)
-    ax.tick_params(colors=MUTED_TEXT, labelsize=9.5)
+    ax.tick_params(labelsize=9.5)
     ax.xaxis.label.set_color(MUTED_TEXT)
     ax.yaxis.label.set_color(MUTED_TEXT)
-    ax.grid(color=GRID_COLOR, linewidth=0.8)
-    for spine in ax.spines.values():
-        spine.set_color(GRID_COLOR)
+    ax.grid(True)
+    ax.set_axisbelow(True)
+
+
+def _model_line(name: str) -> Dict[str, Any]:
+    return {
+        "color": MODEL_COLORS[name],
+        "linestyle": MODEL_LINESTYLES[name],
+        "linewidth": HEADLINE_LINEWIDTH if name == "xgboost" else SERIES_LINEWIDTH,
+        "zorder": 3 if name == "xgboost" else 2,
+    }
 
 
 def _save(fig: plt.Figure, output_path: str) -> str:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    fig.savefig(output_path, dpi=300, bbox_inches='tight', facecolor=BG_COLOR, edgecolor='none')
+    fig.savefig(output_path, dpi=300, bbox_inches='tight', facecolor=BACKGROUND, edgecolor='none')
     plt.close(fig)
     print(f"Plot saved to: {output_path}")
     return output_path
 
 
 def _legend(ax: plt.Axes, loc: str) -> None:
-    legend = ax.legend(loc=loc, frameon=True, fontsize=9.5)
-    legend.get_frame().set_facecolor(BG_COLOR)
-    legend.get_frame().set_edgecolor(GRID_COLOR)
-    for text in legend.get_texts():
-        text.set_color(TEXT_COLOR)
+    ax.legend(loc=loc, frameon=True, fontsize=9.5)
 
 
 def plot_roc_curves(
@@ -167,18 +173,17 @@ def plot_roc_curves(
     output_path: str = os.path.join(ASSETS_DIR, "roc_curves.png")
 ) -> str:
     """Overlays test-set ROC curves for every model."""
+    apply_theme()
     fig, ax = plt.subplots(figsize=(8, 6.5))
-    fig.patch.set_facecolor(BG_COLOR)
     _style_axes(ax)
-    ax.plot([0, 1], [0, 1], linestyle=":", color=GRID_COLOR, linewidth=1.2)
+    ax.plot([0, 1], [0, 1], linestyle=REFERENCE_LINESTYLE, color=REFERENCE, linewidth=1.2)
     for name, y_prob in probs.items():
         fpr, tpr, _ = roc_curve(y_test, y_prob)
-        ax.plot(fpr, tpr, color=MODEL_COLORS[name], linewidth=2,
-                linestyle="--" if name == "dummy" else "-",
+        ax.plot(fpr, tpr, **_model_line(name),
                 label=f"{MODEL_LABELS[name]} (AUC {roc_auc_score(y_test, y_prob):.3f})")
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
-    ax.set_title("ROC Curves — Held-out Test Set", fontsize=14, fontweight='bold', color=TEXT_COLOR, loc='left')
+    ax.set_title("ROC Curves — Held-out Test Set", fontsize=14, fontweight='bold', color=TEXT, loc='left')
     _legend(ax, "lower right")
     return _save(fig, output_path)
 
@@ -194,22 +199,22 @@ def plot_pr_curves(
     it is labelled on that line instead of drawn as a misleading interpolated diagonal.
     """
     prevalence = float(np.mean(y_test))
+    apply_theme()
     fig, ax = plt.subplots(figsize=(8, 6.5))
-    fig.patch.set_facecolor(BG_COLOR)
     _style_axes(ax)
     baseline_label = f"No-skill baseline (prevalence {prevalence:.3f})"
-    ax.axhline(prevalence, linestyle="--", color=MUTED_TEXT, linewidth=1.5, label=baseline_label)
+    ax.axhline(prevalence, linestyle=REFERENCE_LINESTYLE, color=REFERENCE, linewidth=1.5, label=baseline_label)
     for name, y_prob in probs.items():
         if name == "dummy":
             continue
         precision, recall, _ = precision_recall_curve(y_test, y_prob)
-        ax.plot(recall, precision, color=MODEL_COLORS[name], linewidth=2,
+        ax.plot(recall, precision, **_model_line(name),
                 label=f"{MODEL_LABELS[name]} (AP {average_precision_score(y_test, y_prob):.3f})")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.02)
     ax.set_xlabel("Recall")
     ax.set_ylabel("Precision")
-    ax.set_title("Precision-Recall Curves — Held-out Test Set", fontsize=14, fontweight='bold', color=TEXT_COLOR, loc='left')
+    ax.set_title("Precision-Recall Curves — Held-out Test Set", fontsize=14, fontweight='bold', color=TEXT, loc='left')
     _legend(ax, "upper right")
     return _save(fig, output_path)
 
@@ -221,25 +226,24 @@ def plot_confusion_matrix(
 ) -> str:
     """Draws the test-set confusion matrix for the headline model."""
     cm_arr = np.array(cm)
-    cmap = LinearSegmentedColormap.from_list("teal_dark", [BG_COLOR, TEAL_PRIMARY])
+    apply_theme()
     fig, ax = plt.subplots(figsize=(6.5, 5.5))
-    fig.patch.set_facecolor(BG_COLOR)
-    ax.set_facecolor(BG_COLOR)
-    ax.imshow(cm_arr, cmap=cmap)
+    image = ax.imshow(cm_arr, cmap=SEQUENTIAL_CMAP)
     labels = ["Retained (0)", "Attrition (1)"]
     ax.set_xticks([0, 1], labels=labels)
     ax.set_yticks([0, 1], labels=labels)
-    ax.tick_params(colors=TEXT_COLOR, labelsize=10)
+    ax.tick_params(colors=TEXT, labelcolor=TEXT, labelsize=10)
     ax.set_xlabel("Predicted", color=MUTED_TEXT)
     ax.set_ylabel("Actual", color=MUTED_TEXT)
     for spine in ax.spines.values():
-        spine.set_color(GRID_COLOR)
-    threshold = cm_arr.max() / 2
+        spine.set_visible(True)
+        spine.set_color(REFERENCE)
     for i in range(2):
         for j in range(2):
+            fill = image.cmap(image.norm(cm_arr[i, j]))
             ax.text(j, i, str(cm_arr[i, j]), ha='center', va='center', fontsize=18, fontweight='bold',
-                    color=BG_COLOR if cm_arr[i, j] > threshold else TEXT_COLOR)
-    ax.set_title(f"Confusion Matrix — {MODEL_LABELS[model_name]} (test set)", fontsize=13, fontweight='bold', color=TEXT_COLOR, loc='left')
+                    color=text_color_for(fill))
+    ax.set_title(f"Confusion Matrix — {MODEL_LABELS[model_name]} (test set)", fontsize=13, fontweight='bold', color=TEXT, loc='left')
     return _save(fig, output_path)
 
 
@@ -297,29 +301,32 @@ def generate_shap_explainability(
     top_features = [{"feature": f, "mean_abs_shap": float(v)} for f, v in mean_abs.head(top_n).items()]
 
     plt.close('all')
-    shap.summary_plot(shap_vals, features=X_explain, show=False, plot_type="dot", color_bar=True)
+    apply_theme()
+    shap.summary_plot(shap_vals, features=X_explain, show=False, plot_type="dot", color_bar=True, cmap=SHAP_CMAP)
 
     fig = plt.gcf()
-    fig.patch.set_facecolor(BG_COLOR)
+    # shap draws its x=0 reference line in light grey; recolour it to the reference colour
+    for line in fig.axes[0].get_lines():
+        if np.allclose(line.get_xdata(), 0):
+            line.set_color(REFERENCE)
     for ax in fig.axes:
-        ax.set_facecolor(BG_COLOR)
-        ax.tick_params(colors=MUTED_TEXT, labelsize=9.5)
+        ax.tick_params(colors=MUTED_TEXT, labelcolor=MUTED_TEXT, labelsize=9.5)
         ax.xaxis.label.set_color(MUTED_TEXT)
-        ax.yaxis.label.set_color(TEXT_COLOR)
+        ax.yaxis.label.set_color(TEXT)
         for t in ax.get_yticklabels():
-            t.set_color(TEXT_COLOR)
+            t.set_color(TEXT)
             t.set_fontsize(10)
             t.set_fontweight('bold')
 
     top3 = ", ".join(f["feature"] for f in top_features[:3])
-    fig.suptitle(f"SHAP Summary — {MODEL_LABELS[model_name]} (test set)", fontsize=15, fontweight='bold', color=TEXT_COLOR, x=0.125, y=0.98, ha='left')
+    fig.suptitle(f"SHAP Summary — {MODEL_LABELS[model_name]} (test set)", fontsize=15, fontweight='bold', color=TEXT, x=0.125, y=0.98, ha='left')
     fig.text(0.125, 0.94, f"{explainer_name}, mean |SHAP| ranking. Top features: {top3}", fontsize=10.5, color=MUTED_TEXT)
 
     plt.tight_layout()
     plt.subplots_adjust(top=0.91)
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor=BG_COLOR, edgecolor='none')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor=BACKGROUND, edgecolor='none')
     plt.close('all')
 
     print(f"SHAP summary plot successfully saved to: {output_path}")
