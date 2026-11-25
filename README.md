@@ -88,7 +88,8 @@ src/
 ├── data_ingestion.py      # Loads the single source CSV
 ├── preprocessing.py       # Cleaning, the fixed split, and the scale -> SMOTENC -> encode steps
 ├── train.py               # 5-fold CV of all four models, headline selection, saves fitted pipelines
-└── evaluate.py            # Loads saved pipelines, test metrics, ROC/PR/confusion/SHAP plots, metrics.json
+├── evaluate.py            # Loads saved pipelines, test metrics, ROC/PR/confusion/SHAP plots, metrics.json
+└── palette.py             # Shared colour palette and matplotlib theme for all figures
 ```
 
 ### 1. Data Ingestion ([`src/data_ingestion.py`](src/data_ingestion.py))
@@ -110,6 +111,7 @@ src/
 ### 4. Evaluation ([`src/evaluate.py`](src/evaluate.py))
 * Loads the saved pipelines (no retraining; it tells you to run `train.py` first if they are missing).
 * Reports accuracy, precision, recall, F1, ROC-AUC and PR-AUC on the 441-row test split, writes `assets/metrics.json`, and draws the ROC, PR, confusion-matrix and SHAP plots.
+* The plots use the shared colour palette and matplotlib theme from [`src/palette.py`](src/palette.py).
 
 ---
 
@@ -212,7 +214,8 @@ employee-attrition-analysis/
 │   ├── data_ingestion.py              # Loads the source CSV
 │   ├── preprocessing.py               # Cleaning, split, scale -> SMOTENC -> encode steps
 │   ├── train.py                       # CV, headline selection, saves pipelines
-│   └── evaluate.py                    # Test metrics, plots, metrics.json
+│   ├── evaluate.py                    # Test metrics, plots, metrics.json
+│   └── palette.py                     # Shared colour palette and matplotlib theme for all figures
 │
 ├── scripts/
 │   └── generate_visuals.py            # EDA plot generator

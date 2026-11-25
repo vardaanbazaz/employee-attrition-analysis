@@ -8,7 +8,9 @@ matplotlib rcParams both scripts rely on.
 Series colours are spaced in CIELAB lightness (L* ~24 / 32 / 39 / 46 / 53)
 so they stay distinguishable in greyscale; every series and reference colour
 is at least 3:1 against BACKGROUND, and both text colours at least 4.5:1.
-Grid and colormap ramp stops are non-data and exempt from the 3:1 rule.
+Grid and the light colormap ramp stops are non-data and exempt from the 3:1
+rule. The SHAP mid stop is the exception: mid-valued dots are data, so it
+reaches 3:1 too.
 Numbers printed inside heatmap / confusion-matrix cells use CELL_TEXT or
 BACKGROUND, picked per cell by text_color_for, and reach 4.5:1 on every cell.
 """
@@ -45,8 +47,9 @@ TEAL_STOP = "#3F6B6B"
 DIVERGING_CMAP = LinearSegmentedColormap.from_list("earth_diverging", [TEAL_STOP, BACKGROUND, RUST])
 # Sequential (confusion matrix): linen -> rust
 SEQUENTIAL_CMAP = LinearSegmentedColormap.from_list("earth_sequential", [BACKGROUND, RUST])
-# SHAP feature value: low -> high
-SHAP_CMAP = LinearSegmentedColormap.from_list("earth_shap", [TEAL_STOP, GRID, RUST])
+# SHAP feature value: low -> high. Mid stop is a grey at 3.11:1 on BACKGROUND so mid-valued dots stay visible.
+SHAP_MID = "#8A8880"
+SHAP_CMAP = LinearSegmentedColormap.from_list("earth_shap", [TEAL_STOP, SHAP_MID, RUST])
 
 
 def _relative_luminance(color) -> float:

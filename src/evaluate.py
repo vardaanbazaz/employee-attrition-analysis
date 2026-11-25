@@ -238,6 +238,10 @@ def plot_confusion_matrix(
     for spine in ax.spines.values():
         spine.set_visible(True)
         spine.set_color(REFERENCE)
+        spine.set_linewidth(1.5)
+    # Thin borders so the near-background "low count" cells still read as cells
+    ax.axhline(0.5, color=REFERENCE, linewidth=1.5)
+    ax.axvline(0.5, color=REFERENCE, linewidth=1.5)
     for i in range(2):
         for j in range(2):
             fill = image.cmap(image.norm(cm_arr[i, j]))
